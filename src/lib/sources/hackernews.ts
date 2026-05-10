@@ -107,10 +107,16 @@ async function searchAlgolia(
 
   try {
     const res = await fetch(url)
-    if (!res.ok) return []
+    if (!res.ok) {
+      console.warn(`[hn] HTTP ${res.status} for tags=${tags} q="${query}"`)
+      return []
+    }
     const data = await res.json()
-    return (data?.hits ?? []) as AlgoliaHit[]
-  } catch {
+    const hits = (data?.hits ?? []) as AlgoliaHit[]
+    console.log(`[hn] tags=${tags} q="${query}": ${hits.length} hits`)
+    return hits
+  } catch (err) {
+    console.error(`[hn] EXCEPTION for tags=${tags} q="${query}":`, err)
     return []
   }
 }
@@ -248,6 +254,9 @@ export async function fetchHackerNewsLeads(
   const cutoffUnix = Math.floor((Date.now() - maxAgeHours * 3_600_000) / 1000)
   const cutoffMs = cutoffUnix * 1000
 
+  console.log(`[hn] Querying with ${skillKeywords.length} keywords: [${skillKeywords.join(', ')}]`)
+  console.log(`[hn] Freshness cutoff: ${maxAgeHours}h (unix=${cutoffUnix})`)
+
   // Generic search now uses intent-qualified queries: "hiring X", "looking for X", "need X", "X wanted"
   const genericPromises: Promise<{ hits: AlgoliaHit[]; bucket: SourceBucket }>[] =
     skillKeywords.flatMap((kw) =>
@@ -313,6 +322,12 @@ export async function fetchHackerNewsLeads(
       freelancerPromise,
     ])
 
+  const genericTotal = genericResults.reduce((n, r) => n + r.hits.length, 0)
+  const askHnTotal = askHnResults.reduce((n, r) => n + r.hits.length, 0)
+  console.log(
+    `[hn] Bucket totals: generic=${genericTotal}, ask_hn=${askHnTotal}, whoishiring=${whoIsHiringLeads.length}, freelancer=${freelancerLeads.length}`
+  )
+
   const searchLeads: Lead[] = []
   for (const { hits, bucket } of [...genericResults, ...askHnResults]) {
     for (const hit of hits) {
@@ -339,6 +354,8 @@ export async function fetchHackerNewsLeads(
         b.posted_at.getTime() - a.posted_at.getTime()
     )
     .slice(0, ITEM_CAP)
+
+  console.log(`[hn] After dedupe + cap: ${all.length} leads (job-seeker filter applied earlier)`)
 
   // Resolve author email per lead in parallel
   const withEmail = await Promise.all(

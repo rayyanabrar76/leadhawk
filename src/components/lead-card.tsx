@@ -17,11 +17,21 @@ import {
   Check,
   ExternalLink,
   Eye,
+  Briefcase,
+  Code2,
 } from 'lucide-react'
+
+export type LeadSource =
+  | 'reddit'
+  | 'hackernews'
+  | 'remotive'
+  | 'remoteok'
+  | 'arbeitnow'
+  | 'github_bounties'
 
 export interface Lead {
   id: string
-  source: 'reddit' | 'hackernews'
+  source: LeadSource
   title: string
   body: string
   url: string
@@ -30,9 +40,58 @@ export interface Lead {
   created_at?: string
   freshness_score: number
   intent_priority?: number | null
+  fit_score?: number | null
   final_score?: number
   status: 'new' | 'drafted' | 'sent' | 'skipped' | 'no_email'
   pitches?: { subject: string; body: string; sent_at: string | null }[]
+  company_name?: string | null
+  company_logo?: string | null
+  salary?: string | null
+  apply_url?: string | null
+  tags?: string[] | null
+}
+
+export const JOB_BOARD_SOURCES: ReadonlyArray<LeadSource> = [
+  'remotive',
+  'remoteok',
+  'arbeitnow',
+]
+
+export function isJobBoardSource(source: LeadSource): boolean {
+  return JOB_BOARD_SOURCES.includes(source)
+}
+
+export function sourceBadge(source: LeadSource): { label: string; cls: string } {
+  switch (source) {
+    case 'remotive':
+      return { label: 'Remotive', cls: 'bg-emerald-600 text-white' }
+    case 'remoteok':
+      return { label: 'RemoteOK', cls: 'bg-cyan-600 text-white' }
+    case 'arbeitnow':
+      return { label: 'Arbeitnow', cls: 'bg-indigo-600 text-white' }
+    case 'github_bounties':
+      return { label: 'GitHub', cls: 'bg-zinc-800 text-zinc-100' }
+    case 'reddit':
+      return { label: 'Reddit', cls: 'bg-orange-600 text-white' }
+    case 'hackernews':
+    default:
+      return { label: 'HN', cls: 'bg-amber-600 text-white' }
+  }
+}
+
+export function viewLinkLabel(source: LeadSource): string {
+  switch (source) {
+    case 'github_bounties':
+      return 'View on GitHub'
+    case 'remotive':
+    case 'remoteok':
+    case 'arbeitnow':
+      return 'View posting'
+    case 'reddit':
+      return 'View on Reddit'
+    default:
+      return 'View on HN'
+  }
 }
 
 interface LeadCardProps {
@@ -91,6 +150,10 @@ export function LeadCard({ lead, onSelect, onDraft, onSkip }: LeadCardProps) {
   }
 
   const intent = lead.intent_priority ?? 0
+  const badge = sourceBadge(lead.source)
+  const isJobBoard = isJobBoardSource(lead.source)
+  const isGitHub = lead.source === 'github_bounties'
+  const SourceIcon = isJobBoard ? Briefcase : isGitHub ? Code2 : Newspaper
 
   return (
     <div
@@ -100,15 +163,20 @@ export function LeadCard({ lead, onSelect, onDraft, onSkip }: LeadCardProps) {
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium text-white bg-amber-600">
-              <Newspaper className="w-3 h-3" />
-              HN
+            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${badge.cls}`}>
+              <SourceIcon className="w-3 h-3" />
+              {badge.label}
             </span>
             <IntentBadge priority={intent} />
             <FreshnessIcon score={lead.freshness_score} />
             <span className="font-mono text-xs text-muted-foreground">
               {lead.freshness_score}
             </span>
+            {lead.fit_score != null && lead.fit_score > 0 && (
+              <span className="font-mono text-xs text-violet-300/70">
+                fit {lead.fit_score}
+              </span>
+            )}
             <span className="text-xs text-muted-foreground ml-auto">
               {formatDistanceToNow(lead.posted_at)}
             </span>
@@ -118,20 +186,55 @@ export function LeadCard({ lead, onSelect, onDraft, onSkip }: LeadCardProps) {
             {lead.title}
           </h3>
 
+          {(isJobBoard || isGitHub) && lead.company_name && (
+            <p className="text-xs text-zinc-300 font-medium mb-0.5">
+              {lead.company_name}
+              {lead.salary && <span className="text-zinc-500 font-normal"> · {lead.salary}</span>}
+            </p>
+          )}
+
           {lead.body && (
             <p className="text-xs text-muted-foreground line-clamp-2">
               {lead.body.slice(0, 200)}
             </p>
           )}
 
-          <p className="text-xs text-muted-foreground mt-1.5">
-            by <span className="text-foreground/70">{lead.author}</span>
-          </p>
+          {!isJobBoard && (
+            <p className="text-xs text-muted-foreground mt-1.5">
+              by <span className="text-foreground/70">{lead.author}</span>
+            </p>
+          )}
         </div>
       </div>
 
       <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50 flex-wrap">
-        {lead.status === 'new' && (
+        {lead.status === 'new' && isJobBoard && lead.apply_url && (
+          <>
+            <a
+              href={lead.apply_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button size="sm" className="h-8 text-xs bg-violet-600 hover:bg-violet-700">
+                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                Apply on site
+              </Button>
+            </a>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 text-xs text-muted-foreground"
+              onClick={handleSkip}
+              disabled={loading !== null}
+            >
+              <X className="w-3.5 h-3.5 mr-1" />
+              Skip
+            </Button>
+          </>
+        )}
+
+        {lead.status === 'new' && !isJobBoard && (
           <>
             <Button
               size="sm"
@@ -198,7 +301,7 @@ export function LeadCard({ lead, onSelect, onDraft, onSkip }: LeadCardProps) {
             className="inline-flex items-center text-xs text-yellow-400 hover:text-yellow-300 underline-offset-2 hover:underline"
           >
             <ExternalLink className="w-3.5 h-3.5 mr-1" />
-            View on HN
+            {viewLinkLabel(lead.source)}
           </a>
         )}
       </div>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { MobileHeader } from '@/components/mobile/mobile-header'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
-import type { Lead } from '@/components/lead-card'
+import { type Lead, isJobBoardSource, sourceBadge, viewLinkLabel } from '@/components/lead-card'
 import { formatDistanceToNow } from '@/lib/time'
 import {
   Newspaper,
@@ -16,6 +16,8 @@ import {
   X,
   Check,
   RefreshCw,
+  Briefcase,
+  Code2,
 } from 'lucide-react'
 
 interface Props {
@@ -50,6 +52,10 @@ export function LeadDetailClient({ initialLead }: Props) {
   const isSent = lead.status === 'sent'
   const isNoEmail = lead.status === 'no_email'
   const isSkipped = lead.status === 'skipped'
+  const isJobBoard = isJobBoardSource(lead.source)
+  const isGitHub = lead.source === 'github_bounties'
+  const badge = sourceBadge(lead.source)
+  const SourceIcon = isJobBoard ? Briefcase : isGitHub ? Code2 : Newspaper
 
   async function handleDraft() {
     setDrafting(true)
@@ -97,9 +103,9 @@ export function LeadDetailClient({ initialLead }: Props) {
     }
   }
 
-  const showDraftButton = !hasPitch && !isSent && !isSkipped
-  const showRedraftButton = hasPitch && !isSent
-  const showActionBar = !isSent && !isSkipped && (hasPitch || isNoEmail)
+  const showDraftButton = !hasPitch && !isSent && !isSkipped && !isJobBoard
+  const showRedraftButton = hasPitch && !isSent && !isJobBoard
+  const showActionBar = !isSent && !isSkipped && (hasPitch || isNoEmail || isJobBoard)
 
   return (
     <>
@@ -110,9 +116,9 @@ export function LeadDetailClient({ initialLead }: Props) {
         {/* Lead meta */}
         <div className="px-4 py-4 border-b border-zinc-800">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className="inline-flex items-center gap-1 text-amber-400 font-mono font-semibold text-xs">
-              <Newspaper className="w-3.5 h-3.5" />
-              Hacker News
+            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold ${badge.cls}`}>
+              <SourceIcon className="w-3 h-3" />
+              {badge.label}
             </span>
             <span className="text-zinc-600">·</span>
             <span className="text-zinc-500 font-mono text-xs">{formatDistanceToNow(lead.posted_at)}</span>
@@ -122,11 +128,23 @@ export function LeadDetailClient({ initialLead }: Props) {
                 Intent {lead.intent_priority}
               </span>
             )}
+            {lead.fit_score != null && lead.fit_score > 0 && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-violet-500/10 text-violet-300/80 border-violet-500/20">
+                Fit {lead.fit_score}
+              </span>
+            )}
           </div>
           <h2 className="text-base font-semibold text-zinc-50 leading-snug mb-2">
             {lead.title}
           </h2>
-          <p className="text-xs text-zinc-500 mb-2">by {lead.author}</p>
+          {(isJobBoard || isGitHub) && lead.company_name ? (
+            <p className="text-xs text-zinc-300 font-medium mb-2">
+              {lead.company_name}
+              {lead.salary && <span className="text-zinc-500 font-normal"> · {lead.salary}</span>}
+            </p>
+          ) : (
+            <p className="text-xs text-zinc-500 mb-2">by {lead.author}</p>
+          )}
           <a
             href={lead.url}
             target="_blank"
@@ -134,7 +152,7 @@ export function LeadDetailClient({ initialLead }: Props) {
             className="inline-flex items-center gap-1 text-xs text-violet-400"
           >
             <ExternalLink className="w-3 h-3" />
-            View on HN
+            {viewLinkLabel(lead.source)}
           </a>
         </div>
 
@@ -147,7 +165,22 @@ export function LeadDetailClient({ initialLead }: Props) {
           </div>
         )}
 
-        {/* Pitch section */}
+        {/* Job board: tags */}
+        {isJobBoard && lead.tags && lead.tags.length > 0 && (
+          <div className="px-4 py-3 border-b border-zinc-800 flex flex-wrap gap-1.5">
+            {lead.tags.slice(0, 8).map((tag) => (
+              <span
+                key={tag}
+                className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-800 text-zinc-300 border border-zinc-700"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Pitch section (hidden for job boards — they redirect to apply_url) */}
+        {!isJobBoard && (
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-zinc-100">Pitch</h3>
@@ -226,6 +259,7 @@ export function LeadDetailClient({ initialLead }: Props) {
             </>
           )}
         </div>
+        )}
       </div>
 
       {/* Floating action bar */}
@@ -234,18 +268,25 @@ export function LeadDetailClient({ initialLead }: Props) {
           className="fixed left-0 right-0 z-30 bg-zinc-950/95 backdrop-blur-lg border-t border-zinc-800 px-4 py-3 flex gap-2"
           style={{ bottom: 'calc(env(safe-area-inset-bottom) + 4rem)' }}
         >
-          {isNoEmail && hasPitch ? (
+          {isJobBoard && lead.apply_url ? (
+            <a href={lead.apply_url} target="_blank" rel="noopener noreferrer" className="flex-1">
+              <button className="w-full h-11 inline-flex items-center justify-center gap-2 bg-violet-600 active:bg-violet-700 text-white rounded-xl font-medium text-sm">
+                <ExternalLink className="w-4 h-4" />
+                Apply on site
+              </button>
+            </a>
+          ) : isNoEmail && hasPitch ? (
             <a href={lead.url} target="_blank" rel="noopener noreferrer" className="flex-1">
               <button className="w-full h-11 inline-flex items-center justify-center gap-2 bg-yellow-600 active:bg-yellow-700 text-white rounded-xl font-medium text-sm">
                 <ExternalLink className="w-4 h-4" />
-                Reply on HN
+                {isGitHub ? 'Reply on GitHub' : 'Reply on HN'}
               </button>
             </a>
           ) : isNoEmail ? (
             <a href={lead.url} target="_blank" rel="noopener noreferrer" className="flex-1">
               <button className="w-full h-11 inline-flex items-center justify-center gap-2 bg-yellow-600 active:bg-yellow-700 text-white rounded-xl font-medium text-sm">
                 <ExternalLink className="w-4 h-4" />
-                View on HN
+                {viewLinkLabel(lead.source)}
               </button>
             </a>
           ) : (

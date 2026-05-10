@@ -92,7 +92,7 @@ export function InstallButton({
 
       {showInstructions && (
         <div
-          className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center p-4 animate-in fade-in"
+          className="fixed inset-0 z-60 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center p-4 animate-in fade-in"
           onClick={() => setShowInstructions(false)}
         >
           <div

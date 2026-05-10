@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import type { Lead } from '@/components/lead-card'
+import { type Lead, isJobBoardSource, sourceBadge, viewLinkLabel } from '@/components/lead-card'
 import { formatDistanceToNow } from '@/lib/time'
 import {
   Newspaper,
@@ -21,6 +21,8 @@ import {
   Send,
   X,
   Check,
+  Briefcase,
+  Code2,
 } from 'lucide-react'
 
 interface LeadDrawerProps {
@@ -55,6 +57,10 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
   const hasPitch = Boolean(lead.pitches?.[0])
   const isSent = lead.status === 'sent'
   const isNoEmail = lead.status === 'no_email'
+  const isJobBoard = isJobBoardSource(lead.source)
+  const isGitHub = lead.source === 'github_bounties'
+  const badge = sourceBadge(lead.source)
+  const SourceIcon = isJobBoard ? Briefcase : isGitHub ? Code2 : Newspaper
 
   async function handleDraft() {
     if (!lead) return
@@ -80,13 +86,18 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto flex flex-col gap-0 p-0">
         <SheetHeader className="p-5 sm:p-6 pb-4">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-amber-400">
-              <Newspaper className="w-3.5 h-3.5" />
-              Hacker News
+            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold ${badge.cls}`}>
+              <SourceIcon className="w-3 h-3" />
+              {badge.label}
             </span>
             <span className="text-xs text-muted-foreground">·</span>
             <span className="text-xs text-muted-foreground font-mono">{formatDistanceToNow(lead.posted_at)}</span>
-            <span className="text-xs text-muted-foreground">by {lead.author}</span>
+            <span className="text-xs text-muted-foreground">
+              {isJobBoard && lead.company_name ? lead.company_name : `by ${lead.author}`}
+            </span>
+            {lead.salary && (
+              <span className="text-xs text-zinc-400">· {lead.salary}</span>
+            )}
           </div>
           <SheetTitle className="text-base leading-snug text-left">{lead.title}</SheetTitle>
           <a
@@ -114,8 +125,8 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
 
         <div className="px-6 py-4 flex-1 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Pitch</h3>
-            {!hasPitch && !isSent && (
+            <h3 className="text-sm font-semibold">{isJobBoard ? 'Job posting' : 'Pitch'}</h3>
+            {!hasPitch && !isSent && !isJobBoard && (
               <Button
                 size="sm"
                 className="h-7 text-xs bg-violet-600 hover:bg-violet-700"
@@ -173,9 +184,21 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
           )}
         </div>
 
-        {!isSent && (hasPitch || isNoEmail) && (
+        {!isSent && (hasPitch || isNoEmail || isJobBoard) && (
           <div className="px-5 sm:px-6 py-4 border-t border-border flex gap-2">
-            {isNoEmail ? (
+            {isJobBoard && lead.apply_url ? (
+              <a
+                href={lead.apply_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1"
+              >
+                <Button className="w-full bg-violet-600 hover:bg-violet-700">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Apply on site
+                </Button>
+              </a>
+            ) : isNoEmail ? (
               <a
                 href={lead.url}
                 target="_blank"
@@ -184,7 +207,7 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
               >
                 <Button className="w-full bg-yellow-600 hover:bg-yellow-700">
                   <ExternalLink className="w-4 h-4 mr-2" />
-                  View on HN
+                  {viewLinkLabel(lead.source)}
                 </Button>
               </a>
             ) : (
