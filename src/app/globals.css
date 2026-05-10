@@ -127,8 +127,14 @@
   html {
     @apply font-sans;
     scroll-behavior: smooth;
-    /* Reserve scrollbar space so modal-open scroll-lock doesn't reflow the page */
+    /* Always reserve scrollbar space so modal-open scroll-lock can't reflow the page */
+    overflow-y: scroll;
     scrollbar-gutter: stable;
+  }
+
+  body {
+    /* Prevent any modal-mount layout reflow from pushing content */
+    overflow-anchor: none;
   }
 }
 

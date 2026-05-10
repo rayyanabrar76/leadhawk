@@ -89,7 +89,7 @@ export function MarketingHeader({ onOpenAuth }: MarketingHeaderProps = {}) {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden border-t border-zinc-800/60 bg-zinc-950">
+        <div className="md:hidden absolute top-full left-0 right-0 border-t border-zinc-800/60 bg-zinc-950/95 backdrop-blur shadow-lg">
           <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-3">
             {NAV_ITEMS.map((item) => (
               <Link
