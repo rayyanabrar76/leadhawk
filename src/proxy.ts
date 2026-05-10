@@ -46,11 +46,27 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding')
+  const isMarketing =
+    pathname === '/' ||
+    pathname === '/pricing' ||
+    pathname === '/privacy' ||
+    pathname === '/terms'
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     url.searchParams.set('auth', 'signup')
+    return NextResponse.redirect(url)
+  }
+
+  // When logged in, bounce away from marketing pages back to the dashboard.
+  // This prevents the mobile back button from leaving the app — pressing back
+  // from /dashboard hits the proxy, sees the user is logged in, and sends them
+  // right back to /dashboard. Only Sign out can leave.
+  if (user && isMarketing) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    url.search = ''
     return NextResponse.redirect(url)
   }
 
