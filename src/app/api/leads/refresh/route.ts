@@ -91,7 +91,7 @@ export async function POST() {
   // verbatim — they say "React" — so single-token terms are needed for matching.
   const fitKeywords = Array.from(new Set([
     ...keywords,
-    ...(profile.tech_stack ?? []).map((t) => t.toLowerCase()),
+    ...((profile.tech_stack ?? []) as string[]).map((t) => t.toLowerCase()),
     profile.skill.toLowerCase(),
   ]))
 
