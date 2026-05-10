@@ -4,6 +4,14 @@ const ITEM_CAP = 50
 
 const HIRING_TITLE_RE = /\b(hire|hiring|looking for|need|seeking|recommend)\b/i
 
+// Job-seeker patterns — drop these from generic search; they're competitors, not leads
+const JOB_SEEKER_RE = /\b(SEEKING WORK|FREELANCER SEEKING|WANT TO BE HIRED|LOOKING FOR WORK|seeking employment|willing to relocate|years of experience|my (?:portfolio|github|cv|résumé|resume))\b/i
+
+function isJobSeekerPost(title: string, body: string): boolean {
+  const combined = `${title}\n${body}`.slice(0, 2000)
+  return JOB_SEEKER_RE.test(combined)
+}
+
 function freshnessScore(postedAt: Date): number {
   const hoursOld = (Date.now() - postedAt.getTime()) / 3_600_000
   return Math.max(0, Math.round(100 - hoursOld * 4))
@@ -309,7 +317,9 @@ export async function fetchHackerNewsLeads(
   for (const { hits, bucket } of [...genericResults, ...askHnResults]) {
     for (const hit of hits) {
       const isComment = (hit._tags ?? []).includes('comment')
-      searchLeads.push(hitToLead(hit, isComment, bucket))
+      const lead = hitToLead(hit, isComment, bucket)
+      if (isJobSeekerPost(lead.title, lead.body)) continue
+      searchLeads.push(lead)
     }
   }
 

@@ -27,7 +27,17 @@ export async function POST() {
   const candidates = await fetchHackerNewsLeads(keywords)
   const candidateCount = candidates.length
 
-  const { kept, dropped } = await classifyManyWithConcurrency(candidates, 5)
+  // High-priority buckets (whoishiring=100, freelancer=90) are pre-filtered at source.
+  // Skip Gemini classification — saves quota and avoids fail-open garbage.
+  const trustedKept = candidates.filter((c) => c.intent_priority >= 80)
+  const needsClassification = candidates.filter((c) => c.intent_priority < 80)
+
+  const { kept: classifiedKept, dropped } = await classifyManyWithConcurrency(
+    needsClassification,
+    5
+  )
+
+  const kept = [...trustedKept, ...classifiedKept]
 
   console.log(
     `[refresh] Filtered ${candidateCount} candidates → ${kept.length} real leads (dropped ${dropped})`
