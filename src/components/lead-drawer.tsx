@@ -83,7 +83,7 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col h-full p-0">
+      <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col h-full p-0 overflow-hidden gap-0">
         {/* Fixed header */}
         <SheetHeader className="p-5 sm:p-6 pb-4 shrink-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
