@@ -44,20 +44,10 @@ export function MobileAuthScreen({ defaultMode = 'login' }: { defaultMode?: Mode
     setError('')
   }
 
-  async function handleGoogleSignIn() {
+  function handleGoogleSignIn() {
     setGoogleLoading(true)
     setError('')
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/app`,
-        queryParams: { access_type: 'offline', prompt: 'consent' },
-      },
-    })
-    if (error) {
-      setError(error.message)
-      setGoogleLoading(false)
-    }
+    window.location.href = '/api/auth/google/start?next=/app'
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -110,7 +100,7 @@ export function MobileAuthScreen({ defaultMode = 'login' }: { defaultMode?: Mode
   if (checkEmailFor) {
     return (
       <div className="fixed inset-0 flex flex-col bg-zinc-950 text-zinc-100">
-        <div className="h-2/5 bg-gradient-to-br from-violet-600 via-violet-500 to-violet-700 flex items-center justify-center">
+        <div className="h-2/5 bg-linear-to-br from-violet-600 via-violet-500 to-violet-700 flex items-center justify-center">
           <div className="rounded-full p-5 bg-white/10 backdrop-blur">
             <Mail className="w-12 h-12 text-white" />
           </div>
@@ -135,7 +125,7 @@ export function MobileAuthScreen({ defaultMode = 'login' }: { defaultMode?: Mode
   return (
     <div className="fixed inset-0 flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden">
       {/* Top: violet hero */}
-      <div className="h-[38vh] min-h-[220px] bg-gradient-to-br from-violet-600 via-violet-500 to-violet-700 flex items-center justify-center">
+      <div className="h-[38vh] min-h-55 bg-linear-to-br from-violet-600 via-violet-500 to-violet-700 flex items-center justify-center">
         <div className="rounded-3xl bg-white p-5 shadow-2xl ring-1 ring-white/40">
           <Logo variant="icon" size="lg" href={null} className="w-16 h-16" />
         </div>

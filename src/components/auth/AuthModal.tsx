@@ -75,23 +75,10 @@ export function AuthModal({ open, onOpenChange, defaultMode = 'login' }: AuthMod
     setResentMsg('')
   }
 
-  async function handleGoogleSignIn() {
+  function handleGoogleSignIn() {
     setGoogleLoading(true)
     setError('')
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
-    })
-    if (error) {
-      setError(error.message)
-      setGoogleLoading(false)
-    }
+    window.location.href = '/api/auth/google/start?next=/dashboard'
   }
 
   async function handleSubmit(e: React.FormEvent) {
