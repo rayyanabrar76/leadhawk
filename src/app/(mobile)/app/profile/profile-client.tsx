@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   Loader2,
 } from 'lucide-react'
+import { InstallButton } from '@/components/mobile/install-button'
 
 interface Props {
   email: string
@@ -186,6 +187,10 @@ export function ProfileClient({ email, skill, gmailConnected }: Props) {
           <SettingsRow icon={LogOut} label="Sign out" onClick={handleSignOut} destructive />
         </div>
       </section>
+
+      <div className="flex justify-center mt-6 px-4">
+        <InstallButton variant="subtle" label="Install on this device" className="w-full" />
+      </div>
 
       <p className="text-center text-xs text-zinc-600 mt-8 mb-4">LeadHawk · v1</p>
     </>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Logo } from '@/components/Logo'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Mail, Eye, EyeOff } from 'lucide-react'
+import { InstallButton } from '@/components/mobile/install-button'
 
 type Mode = 'login' | 'signup'
 
@@ -255,6 +256,10 @@ export function MobileAuthScreen({ defaultMode = 'login' }: { defaultMode?: Mode
             </>
           )}
         </p>
+
+        <div className="flex justify-center mt-6 pt-6 border-t border-zinc-800">
+          <InstallButton variant="subtle" label="Install LeadHawk on your phone" />
+        </div>
       </div>
     </div>
   )
