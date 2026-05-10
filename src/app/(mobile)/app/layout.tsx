@@ -7,7 +7,7 @@ export default async function MobileAppLayout({ children }: { children: React.Re
   const showShell = Boolean(user)
 
   return (
-    <div className="lh-mobile-app-shell flex flex-col min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="lh-mobile-app-shell flex flex-col bg-zinc-950 text-zinc-100">
       <main
         className={`flex-1 w-full ${showShell ? 'max-w-xl mx-auto' : ''}`}
         style={
