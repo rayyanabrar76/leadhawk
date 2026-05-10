@@ -136,7 +136,9 @@ export function MobileAuthScreen({ defaultMode = 'login' }: { defaultMode?: Mode
     <div className="fixed inset-0 flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden">
       {/* Top: violet hero */}
       <div className="h-[38vh] min-h-[220px] bg-gradient-to-br from-violet-600 via-violet-500 to-violet-700 flex items-center justify-center">
-        <Logo variant="icon" size="lg" href={null} className="w-20 h-20 drop-shadow-xl" />
+        <div className="rounded-3xl bg-white p-5 shadow-2xl ring-1 ring-white/40">
+          <Logo variant="icon" size="lg" href={null} className="w-16 h-16" />
+        </div>
       </div>
 
       {/* Bottom: auth card */}

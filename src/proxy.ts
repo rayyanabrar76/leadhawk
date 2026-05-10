@@ -31,6 +31,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Mobile users on the desktop dashboard get sent to the native leads tab
+  if (isMobileUA && pathname.startsWith('/dashboard')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/app/leads'
+    url.search = ''
+    return NextResponse.redirect(url)
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
