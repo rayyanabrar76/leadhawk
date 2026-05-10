@@ -1,7 +1,7 @@
 // Minimal service worker for PWA installability + light caching of static assets.
 // We never cache API responses (auth, leads, pitches) — those must always be fresh.
 
-const CACHE_VERSION = 'leadhawk-v1'
+const CACHE_VERSION = 'leadhawk-v2'
 const STATIC_CACHE = `${CACHE_VERSION}-static`
 
 self.addEventListener('install', (event) => {
@@ -50,16 +50,12 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Network-first for HTML pages — fall back to cache when offline
+  // Network-only for HTML — never cache pages, otherwise stale HTML keeps
+  // requesting CSS/JS bundle hashes that no longer exist after a deploy.
+  // (Static assets remain cached above for offline-friendliness.)
   if (req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const clone = res.clone()
-          caches.open(STATIC_CACHE).then((c) => c.put(req, clone))
-          return res
-        })
-        .catch(() => caches.match(req).then((m) => m ?? caches.match('/')))
+      fetch(req).catch(() => caches.match('/') || caches.match('/app'))
     )
   }
 })
