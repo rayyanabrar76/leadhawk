@@ -45,6 +45,7 @@ export default async function DashboardPage() {
     <DashboardClient
       initialLeads={sorted}
       skill={profile.skill}
+      bio={profile.bio ?? null}
       userEmail={profile.email ?? user.email ?? ''}
       hasGoogleToken={Boolean(googleToken)}
       profileComplete={profileComplete}

@@ -16,6 +16,7 @@ import { UserMenu } from '@/components/user-menu'
 interface Props {
   initialLeads: Lead[]
   skill: string
+  bio: string | null
   userEmail: string
   hasGoogleToken: boolean
   profileComplete: boolean
@@ -34,7 +35,7 @@ function computeFinalScore(l: Lead): number {
   return (l.freshness_score ?? 0) * 0.4 + (l.intent_priority ?? 0) * 0.6
 }
 
-export function DashboardClient({ initialLeads, skill, userEmail, hasGoogleToken, profileComplete }: Props) {
+export function DashboardClient({ initialLeads, skill, bio, userEmail, hasGoogleToken, profileComplete }: Props) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
   const [refreshing, setRefreshing] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
@@ -168,9 +169,11 @@ export function DashboardClient({ initialLeads, skill, userEmail, hasGoogleToken
             </div>
 
             <div className="flex-1 min-w-0 hidden sm:block">
-              <p className="text-xs text-muted-foreground truncate">
-                <span className="text-foreground/70">{skill}</span>
-              </p>
+              {bio && (
+                <p className="text-xs text-muted-foreground truncate">
+                  <span className="text-foreground/70">{bio}</span>
+                </p>
+              )}
             </div>
 
             <div className="flex-1 sm:flex-none" />
@@ -213,10 +216,12 @@ export function DashboardClient({ initialLeads, skill, userEmail, hasGoogleToken
             </div>
           </div>
 
-          {/* Skill subtitle on its own row on mobile */}
-          <p className="sm:hidden text-xs text-muted-foreground truncate mt-2 px-1">
-            <span className="text-foreground/70">{skill}</span>
-          </p>
+          {/* Bio subtitle on its own row on mobile */}
+          {bio && (
+            <p className="sm:hidden text-xs text-muted-foreground truncate mt-2 px-1">
+              <span className="text-foreground/70">{bio}</span>
+            </p>
+          )}
         </div>
       </header>
 
