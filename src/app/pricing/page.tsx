@@ -17,7 +17,7 @@ const TIERS = [
       'Manual review of every send',
     ],
     cta: 'Start free',
-    href: '/signup',
+    href: '/?auth=signup',
     highlight: false,
   },
   {
@@ -33,7 +33,7 @@ const TIERS = [
       'Priority support',
     ],
     cta: 'Upgrade to Pro',
-    href: '/signup',
+    href: '/?auth=signup',
     highlight: true,
   },
   {
@@ -49,7 +49,7 @@ const TIERS = [
       'Custom domain support',
     ],
     cta: 'Upgrade to Agency',
-    href: '/signup',
+    href: '/?auth=signup',
     highlight: false,
   },
 ]
