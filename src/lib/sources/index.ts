@@ -6,7 +6,7 @@ import { fetchArbeitnowLeads } from './arbeitnow'
 import { fetchGitHubBountyLeads } from './github-bounties'
 
 const SOURCE_NAMES = ['hn', 'remotive', 'remoteok', 'arbeitnow', 'github'] as const
-const MAX_AGE_HOURS = 24
+const MAX_AGE_HOURS = 7 * 24
 
 export interface SourceFunnel {
   source: (typeof SOURCE_NAMES)[number]
@@ -59,7 +59,7 @@ export async function fetchAllSources(keywords: string[]): Promise<FetchAllResul
   const cutoff = Date.now() - MAX_AGE_HOURS * 3_600_000
   const fresh = leads.filter((l) => l.posted_at.getTime() >= cutoff)
   console.log(
-    `[freshness] ${leads.length} → ${fresh.length} after ${MAX_AGE_HOURS}h filter`
+    `[freshness] ${leads.length} → ${fresh.length} after ${MAX_AGE_HOURS}h (${MAX_AGE_HOURS / 24}d) filter`
   )
 
   return { leads: fresh, funnel }

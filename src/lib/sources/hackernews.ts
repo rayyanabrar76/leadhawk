@@ -238,7 +238,12 @@ async function fetchTopLevelComments(
   return leads
 }
 
+const ALREADY_INTENT = /\b(need|hire|hiring|looking|freelancer|wanted|seeking)\b/i
+
 function buildIntentQueries(keyword: string): string[] {
+  // Compound keywords already contain intent words — wrapping creates nonsense
+  // queries like "need need React" or "hiring React freelancer". Skip them.
+  if (ALREADY_INTENT.test(keyword)) return []
   return [
     `hiring ${keyword}`,
     `looking for ${keyword}`,
