@@ -83,9 +83,8 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col h-full p-0 overflow-hidden gap-0">
-        {/* Fixed header */}
-        <SheetHeader className="p-5 sm:p-6 pb-4 shrink-0">
+      <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto flex flex-col gap-0 p-0">
+        <SheetHeader className="p-5 sm:p-6 pb-4">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold ${badge.cls}`}>
               <SourceIcon className="w-3 h-3" />
@@ -112,13 +111,11 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
           </a>
         </SheetHeader>
 
-        <Separator className="shrink-0" />
+        <Separator />
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto">
         {lead.body && (
           <div className="px-5 sm:px-6 py-4">
-            <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+            <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-12">
               {lead.body}
             </p>
           </div>
@@ -126,7 +123,7 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
 
         <Separator />
 
-        <div className="px-6 py-4 space-y-4">
+        <div className="px-6 py-4 flex-1 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">{isJobBoard ? 'Job posting' : 'Pitch'}</h3>
             {!hasPitch && !isSent && !isJobBoard && (
@@ -186,11 +183,9 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
             <p className="text-xs text-red-400">{sendError}</p>
           )}
         </div>
-        </div>{/* end scrollable */}
 
-        {/* Fixed action bar */}
         {!isSent && (hasPitch || isNoEmail || isJobBoard) && (
-          <div className="px-5 sm:px-6 py-4 border-t border-border flex gap-2 shrink-0">
+          <div className="px-5 sm:px-6 py-4 border-t border-border flex gap-2">
             {isJobBoard && lead.apply_url ? (
               <a
                 href={lead.apply_url}
