@@ -21,13 +21,13 @@ export default async function MobileProfilePage() {
     .maybeSingle()
 
   return (
-    <>
+    <div className="h-dvh overflow-y-auto pb-16">
       <MobileHeader />
       <ProfileClient
         email={profile?.email ?? user.email ?? ''}
         skill={profile?.skill ?? ''}
         gmailConnected={Boolean(googleToken)}
       />
-    </>
+    </div>
   )
 }
