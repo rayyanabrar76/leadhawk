@@ -47,13 +47,28 @@ Output ONLY valid JSON in this exact format, no markdown, no preamble:
   return parsed
 }
 
-export async function generateKeywordVariations(skill: string): Promise<string[]> {
-  const prompt = `Given this freelancer skill: "${skill}"
+interface ProfileContext {
+  skill: string
+  bio?: string | null
+  techStack?: string[] | null
+  industries?: string[] | null
+}
 
-Generate 4-6 short keyword phrases (2-4 words each) that someone posting a job or request on Hacker News would use when they need this skill (e.g. "react developer", "frontend dashboard", "saas dashboard ui").
+export async function generateKeywordVariations(profile: ProfileContext): Promise<string[]> {
+  const lines: string[] = [`Skill: ${profile.skill}`]
+  if (profile.techStack?.length) lines.push(`Tech stack: ${profile.techStack.join(', ')}`)
+  if (profile.industries?.length) lines.push(`Industries: ${profile.industries.join(', ')}`)
+  if (profile.bio) lines.push(`Bio: ${profile.bio.slice(0, 300)}`)
+
+  const prompt = `You are helping a freelancer find job postings and contract opportunities online.
+
+Freelancer profile:
+${lines.join('\n')}
+
+Generate 8-12 short keyword phrases (2-4 words each) that hiring managers or startup founders would write when posting a job or contract on Hacker News, Reddit, or job boards. Focus on their specific tech stack and industries. Include variations like "need <tech>", "<tech> developer", "<tech> freelancer", "<industry> <tech>".
 
 Output ONLY a JSON array of strings, no markdown, no explanation:
-["phrase1", "phrase2", "phrase3", "phrase4"]`
+["phrase1", "phrase2", ...]`
 
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' })
@@ -61,13 +76,13 @@ Output ONLY a JSON array of strings, no markdown, no explanation:
     const text = result.response.text().trim()
 
     const jsonMatch = text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) return [skill]
+    if (!jsonMatch) return [profile.skill]
 
     const keywords = JSON.parse(jsonMatch[0]) as string[]
-    const unique = Array.from(new Set([skill, ...keywords]))
-    return unique.slice(0, 6)
+    const unique = Array.from(new Set([profile.skill, ...keywords]))
+    return unique.slice(0, 12)
   } catch (err) {
     console.warn('Gemini keyword expansion failed, falling back to skill only:', err instanceof Error ? err.message : err)
-    return [skill]
+    return [profile.skill]
   }
 }

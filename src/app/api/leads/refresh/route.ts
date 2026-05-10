@@ -19,7 +19,7 @@ export async function POST() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('skill')
+    .select('skill, bio, tech_stack, industries')
     .eq('id', user.id)
     .single()
 
@@ -27,8 +27,14 @@ export async function POST() {
     return NextResponse.json({ error: 'No skill set' }, { status: 400 })
   }
 
-  const keywords = await generateKeywordVariations(profile.skill)
+  const keywords = await generateKeywordVariations({
+    skill: profile.skill,
+    bio: profile.bio,
+    techStack: profile.tech_stack,
+    industries: profile.industries,
+  })
   console.log(`[refresh] Skill: "${profile.skill}"`)
+  console.log(`[refresh] Tech stack: ${JSON.stringify(profile.tech_stack)}`)
   console.log(`[refresh] Expanded keywords: ${JSON.stringify(keywords)}`)
 
   const { leads: rawLeads, funnel } = await fetchAllSources(keywords)
