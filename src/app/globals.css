@@ -127,6 +127,8 @@
   html {
     @apply font-sans;
     scroll-behavior: smooth;
+    /* Reserve scrollbar space so modal-open scroll-lock doesn't reflow the page */
+    scrollbar-gutter: stable;
   }
 }
 
