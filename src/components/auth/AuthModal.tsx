@@ -146,7 +146,8 @@ export function AuthModal({ open, onOpenChange, defaultMode = 'login' }: AuthMod
       return
     }
 
-    onOpenChange(false)
+    // Keep modal open + spinner spinning until navigation unmounts it.
+    // Closing here would fade-reveal the landing page underneath for ~200ms.
     router.replace('/dashboard')
     router.refresh()
   }
@@ -168,7 +169,14 @@ export function AuthModal({ open, onOpenChange, defaultMode = 'login' }: AuthMod
   }
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root
+      open={open}
+      onOpenChange={(v) => {
+        // Prevent closing while a sign-in is in flight — would reveal landing page mid-navigation
+        if (loading || googleLoading) return
+        onOpenChange(v)
+      }}
+    >
       <DialogPrimitive.Portal>
         <DialogPrimitive.Backdrop
           className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
