@@ -9,7 +9,7 @@ import { getCached, setCached } from '@/lib/cache/source-cache'
 
 const CACHE_TTL_SECONDS = 6 * 60 * 60
 const ITEM_CAP = 50
-const MAX_AGE_MS = 24 * 3_600_000
+const MAX_AGE_MS = 7 * 24 * 3_600_000
 
 interface RemoteOKJob {
   id?: string | number

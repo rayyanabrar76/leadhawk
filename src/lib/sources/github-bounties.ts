@@ -8,7 +8,7 @@ import { getCached, setCached } from '@/lib/cache/source-cache'
 
 const CACHE_TTL_SECONDS = 30 * 60
 const ITEM_CAP = 30
-const MAX_AGE_MS = 24 * 3_600_000
+const MAX_AGE_MS = 30 * 24 * 3_600_000
 
 interface GitHubIssue {
   id: number

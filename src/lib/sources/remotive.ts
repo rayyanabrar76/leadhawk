@@ -8,7 +8,7 @@ import { getCached, setCached } from '@/lib/cache/source-cache'
 
 const CACHE_TTL_SECONDS = 12 * 60 * 60
 const ITEM_CAP = 30
-const MAX_AGE_MS = 24 * 3_600_000
+const MAX_AGE_MS = 7 * 24 * 3_600_000
 
 interface RemotiveJob {
   id: number
@@ -70,7 +70,7 @@ export async function fetchRemotiveLeads(keywords: string[]): Promise<Lead[]> {
     const t = new Date(j.publication_date).getTime()
     return Number.isFinite(t) && t >= cutoff
   })
-  console.log(`[remotive] ${allJobs.length} → ${jobs.length} after 24h date filter`)
+  console.log(`[remotive] ${allJobs.length} → ${jobs.length} after 7d date filter`)
 
   return jobs.slice(0, ITEM_CAP).map((j): Lead => {
     const postedAt = new Date(j.publication_date)
