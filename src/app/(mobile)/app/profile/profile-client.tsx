@@ -106,12 +106,12 @@ export function ProfileClient({ email, skill, gmailConnected }: Props) {
           <SettingsRow
             icon={Mail}
             label="Email"
-            trailing={<span className="text-xs text-zinc-500 truncate max-w-[160px]">{email}</span>}
+            trailing={<span className="text-xs text-zinc-500 truncate max-w-40">{email}</span>}
           />
           <SettingsRow
             icon={Briefcase}
             label="Skill"
-            trailing={<span className="text-xs text-zinc-500 truncate max-w-[160px]">{skill}</span>}
+            trailing={<span className="text-xs text-zinc-500 truncate max-w-40">{skill}</span>}
           />
           <SettingsRow
             icon={gmailConnected ? Wifi : WifiOff}
