@@ -10,6 +10,15 @@ interface IntentInput {
 
 const cache = new Map<string, boolean>()
 
+const HIRING_RE = /\b(hire|hiring|looking to hire|looking for .{0,40}(developer|engineer|designer|freelancer|contractor)|need (a |an )?(developer|engineer|designer|freelancer|contractor)|seeking (a |an )?(developer|engineer|designer|freelancer|contractor)|contract (work|opportunity|role)|freelance (work|opportunity|gig)|paid (project|work|contract)|willing to pay|budget:|we('re| are) (hiring|looking)|job opening|open role|open position)\b/i
+const SEEKER_RE = /\b(seeking work|looking for (a |an )?(job|position|role|opportunity)|open to work|available for hire|my (portfolio|github|cv|résumé|resume)|years of experience|i('m| am) (a |an )?(developer|engineer|designer))\b/i
+
+function keywordFallbackClassify(lead: IntentInput): boolean {
+  const text = `${lead.title} ${lead.body}`.slice(0, 2000)
+  if (SEEKER_RE.test(text)) return false
+  return HIRING_RE.test(text)
+}
+
 export async function classifyLeadIntent(lead: IntentInput): Promise<boolean> {
   if (cache.has(lead.source_id)) return cache.get(lead.source_id)!
 
@@ -35,10 +44,10 @@ Reply with ONLY one word: YES or NO.`
     return yes
   } catch (err) {
     console.warn(
-      `Intent classify failed for ${lead.source_id}, defaulting to YES:`,
-      err instanceof Error ? err.message : err
+      `Intent classify failed for ${lead.source_id}, using keyword fallback:`,
+      err instanceof Error ? err.message.slice(0, 120) : err
     )
-    return true // fail-open so a Gemini outage doesn't drop everything
+    return keywordFallbackClassify(lead)
   }
 }
 
