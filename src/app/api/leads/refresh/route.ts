@@ -27,7 +27,7 @@ export async function POST() {
     return NextResponse.json({ error: 'No skill set' }, { status: 400 })
   }
 
-  const keywords = await generateKeywordVariations({
+  const keywords = generateKeywordVariations({
     skill: profile.skill,
     bio: profile.bio,
     techStack: profile.tech_stack,
