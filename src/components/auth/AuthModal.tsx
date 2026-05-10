@@ -147,7 +147,7 @@ export function AuthModal({ open, onOpenChange, defaultMode = 'login' }: AuthMod
     }
 
     onOpenChange(false)
-    router.push('/dashboard')
+    router.replace('/dashboard')
     router.refresh()
   }
 
