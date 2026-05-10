@@ -1,0 +1,213 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import type { Lead } from '@/components/lead-card'
+import { formatDistanceToNow } from '@/lib/time'
+import {
+  Newspaper,
+  ExternalLink,
+  Sparkles,
+  Send,
+  X,
+  Check,
+} from 'lucide-react'
+
+interface LeadDrawerProps {
+  lead: Lead | null
+  open: boolean
+  onClose: () => void
+  onDraft: (leadId: string) => Promise<void>
+  onSend: (leadId: string, subject: string, body: string) => Promise<void>
+  onSkip: (leadId: string) => Promise<void>
+}
+
+export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: LeadDrawerProps) {
+  const [subject, setSubject] = useState('')
+  const [body, setBody] = useState('')
+  const [drafting, setDrafting] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState('')
+
+  useEffect(() => {
+    if (lead?.pitches?.[0]) {
+      setSubject(lead.pitches[0].subject)
+      setBody(lead.pitches[0].body)
+    } else {
+      setSubject('')
+      setBody('')
+    }
+    setSendError('')
+  }, [lead])
+
+  if (!lead) return null
+
+  const hasPitch = Boolean(lead.pitches?.[0])
+  const isSent = lead.status === 'sent'
+  const isNoEmail = lead.status === 'no_email'
+
+  async function handleDraft() {
+    if (!lead) return
+    setDrafting(true)
+    await onDraft(lead.id)
+    setDrafting(false)
+  }
+
+  async function handleSend() {
+    if (!lead) return
+    setSending(true)
+    setSendError('')
+    try {
+      await onSend(lead.id, subject, body)
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : 'Failed to send')
+    }
+    setSending(false)
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto flex flex-col gap-0 p-0">
+        <SheetHeader className="p-6 pb-4">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-amber-400">
+              <Newspaper className="w-3.5 h-3.5" />
+              Hacker News
+            </span>
+            <span className="text-xs text-muted-foreground">·</span>
+            <span className="text-xs text-muted-foreground font-mono">{formatDistanceToNow(lead.posted_at)}</span>
+            <span className="text-xs text-muted-foreground">by {lead.author}</span>
+          </div>
+          <SheetTitle className="text-base leading-snug text-left">{lead.title}</SheetTitle>
+          <a
+            href={lead.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-xs text-violet-400 hover:underline mt-1"
+          >
+            <ExternalLink className="w-3 h-3 mr-1" />
+            View original post
+          </a>
+        </SheetHeader>
+
+        <Separator />
+
+        {lead.body && (
+          <div className="px-6 py-4">
+            <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-12">
+              {lead.body}
+            </p>
+          </div>
+        )}
+
+        <Separator />
+
+        <div className="px-6 py-4 flex-1 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Pitch</h3>
+            {!hasPitch && !isSent && (
+              <Button
+                size="sm"
+                className="h-7 text-xs bg-violet-600 hover:bg-violet-700"
+                onClick={handleDraft}
+                disabled={drafting}
+              >
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                {drafting ? 'Drafting with AI…' : 'Draft with AI'}
+              </Button>
+            )}
+          </div>
+
+          {isSent && (
+            <div className="rounded-md bg-green-500/10 border border-green-500/20 px-3 py-2">
+              <p className="inline-flex items-center text-xs text-green-400 font-medium">
+                <Check className="w-3.5 h-3.5 mr-1" />
+                Sent
+              </p>
+            </div>
+          )}
+
+          {isNoEmail && !hasPitch && (
+            <div className="rounded-md bg-yellow-500/10 border border-yellow-500/20 px-3 py-2 space-y-2">
+              <p className="text-xs text-yellow-400">No email address found for this author.</p>
+              <p className="text-xs text-muted-foreground">You can still view the post on HN and reply there directly.</p>
+            </div>
+          )}
+
+          {hasPitch && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Subject</Label>
+                <Input
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  className="text-sm font-mono"
+                  disabled={isSent}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Body</Label>
+                <Textarea
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  rows={10}
+                  className="text-sm font-mono resize-none"
+                  disabled={isSent}
+                />
+              </div>
+            </div>
+          )}
+
+          {sendError && (
+            <p className="text-xs text-red-400">{sendError}</p>
+          )}
+        </div>
+
+        {!isSent && (hasPitch || isNoEmail) && (
+          <div className="px-6 py-4 border-t border-border flex gap-2">
+            {isNoEmail ? (
+              <a
+                href={lead.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1"
+              >
+                <Button className="w-full bg-yellow-600 hover:bg-yellow-700">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  View on HN
+                </Button>
+              </a>
+            ) : (
+              <Button
+                className="flex-1 bg-violet-600 hover:bg-violet-700"
+                onClick={handleSend}
+                disabled={sending || !subject || !body}
+              >
+                <Send className="w-4 h-4 mr-2" />
+                {sending ? 'Sending…' : 'Send via Gmail'}
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              className="text-muted-foreground"
+              onClick={() => { onSkip(lead.id); onClose() }}
+            >
+              <X className="w-4 h-4 mr-1" />
+              Skip
+            </Button>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  )
+}
