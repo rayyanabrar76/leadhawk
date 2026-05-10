@@ -15,10 +15,27 @@ import {
   Loader2,
   X,
   Check,
+  RefreshCw,
 } from 'lucide-react'
 
 interface Props {
   initialLead: Lead
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    new:     { label: 'New',     cls: 'bg-blue-500/15 text-blue-400 border-blue-500/20' },
+    drafted: { label: 'Drafted', cls: 'bg-violet-500/15 text-violet-400 border-violet-500/20' },
+    sent:    { label: 'Sent',    cls: 'bg-green-500/15 text-green-400 border-green-500/20' },
+    skipped: { label: 'Skipped', cls: 'bg-zinc-500/15 text-zinc-400 border-zinc-700' },
+    no_email:{ label: 'No email',cls: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20' },
+  }
+  const { label, cls } = map[status] ?? map.new
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cls}`}>
+      {label}
+    </span>
+  )
 }
 
 export function LeadDetailClient({ initialLead }: Props) {
@@ -32,6 +49,7 @@ export function LeadDetailClient({ initialLead }: Props) {
   const hasPitch = Boolean(lead.pitches?.[0])
   const isSent = lead.status === 'sent'
   const isNoEmail = lead.status === 'no_email'
+  const isSkipped = lead.status === 'skipped'
 
   async function handleDraft() {
     setDrafting(true)
@@ -43,7 +61,7 @@ export function LeadDetailClient({ initialLead }: Props) {
       if (!res.ok || !data.pitch) throw new Error(data.error ?? 'Draft failed')
       setSubject(data.pitch.subject)
       setBody(data.pitch.body)
-      setLead({ ...lead, status: 'drafted', pitches: [data.pitch] })
+      setLead({ ...lead, status: isNoEmail ? 'no_email' : 'drafted', pitches: [data.pitch] })
       toast.success('Pitch drafted')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Draft failed')
@@ -79,33 +97,43 @@ export function LeadDetailClient({ initialLead }: Props) {
     }
   }
 
+  const showDraftButton = !hasPitch && !isSent && !isSkipped
+  const showRedraftButton = hasPitch && !isSent
+  const showActionBar = !isSent && !isSkipped && (hasPitch || isNoEmail)
+
   return (
     <>
       <Toaster position="top-center" theme="dark" />
       <MobileHeader title="Lead" showBack />
 
-      <div className="lh-slide-in">
+      <div className="lh-slide-in pb-40">
         {/* Lead meta */}
         <div className="px-4 py-4 border-b border-zinc-800">
-          <div className="flex items-center gap-2 mb-2 text-xs">
-            <span className="inline-flex items-center gap-1 text-amber-400 font-mono font-semibold">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-amber-400 font-mono font-semibold text-xs">
               <Newspaper className="w-3.5 h-3.5" />
               Hacker News
             </span>
             <span className="text-zinc-600">·</span>
-            <span className="text-zinc-500 font-mono">{formatDistanceToNow(lead.posted_at)}</span>
+            <span className="text-zinc-500 font-mono text-xs">{formatDistanceToNow(lead.posted_at)}</span>
+            <StatusBadge status={lead.status} />
+            {lead.intent_priority != null && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-violet-500/10 text-violet-300 border-violet-500/20">
+                Intent {lead.intent_priority}
+              </span>
+            )}
           </div>
           <h2 className="text-base font-semibold text-zinc-50 leading-snug mb-2">
             {lead.title}
           </h2>
-          <p className="text-xs text-zinc-500">by {lead.author}</p>
+          <p className="text-xs text-zinc-500 mb-2">by {lead.author}</p>
           <a
             href={lead.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center text-xs text-violet-400 mt-2"
+            className="inline-flex items-center gap-1 text-xs text-violet-400"
           >
-            <ExternalLink className="w-3 h-3 mr-1" />
+            <ExternalLink className="w-3 h-3" />
             View on HN
           </a>
         </div>
@@ -123,42 +151,66 @@ export function LeadDetailClient({ initialLead }: Props) {
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-zinc-100">Pitch</h3>
-            {!hasPitch && !isSent && !isNoEmail && (
-              <button
-                onClick={handleDraft}
-                disabled={drafting}
-                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-violet-600 active:bg-violet-700 text-white text-xs font-medium disabled:opacity-50"
-              >
-                {drafting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                {drafting ? 'Drafting…' : 'Draft with AI'}
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {showRedraftButton && (
+                <button
+                  onClick={handleDraft}
+                  disabled={drafting}
+                  className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-zinc-800 active:bg-zinc-700 text-zinc-300 text-xs font-medium disabled:opacity-50"
+                >
+                  {drafting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  Redraft
+                </button>
+              )}
+              {showDraftButton && (
+                <button
+                  onClick={handleDraft}
+                  disabled={drafting}
+                  className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-violet-600 active:bg-violet-700 text-white text-xs font-medium disabled:opacity-50"
+                >
+                  {drafting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  {drafting ? 'Drafting…' : 'Draft with AI'}
+                </button>
+              )}
+            </div>
           </div>
 
           {isSent && (
             <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-3">
               <p className="inline-flex items-center text-sm text-green-400 font-medium">
                 <Check className="w-4 h-4 mr-1.5" />
-                Sent
+                Pitch sent successfully
               </p>
             </div>
           )}
 
+          {isSkipped && (
+            <div className="rounded-lg bg-zinc-800/60 border border-zinc-700 p-3">
+              <p className="text-sm text-zinc-400">This lead was skipped.</p>
+            </div>
+          )}
+
           {isNoEmail && !hasPitch && (
-            <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-3">
-              <p className="text-sm text-yellow-400">No email available — reply on HN instead.</p>
+            <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-3 space-y-1">
+              <p className="text-sm text-yellow-400 font-medium">No email found for this author</p>
+              <p className="text-xs text-zinc-400">You can still draft a pitch and reply on HN manually.</p>
             </div>
           )}
 
           {hasPitch && (
             <>
+              {isNoEmail && (
+                <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 px-3 py-2">
+                  <p className="text-xs text-yellow-400">No email — copy this pitch and reply on HN.</p>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <label className="text-xs text-zinc-400">Subject</label>
                 <input
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   disabled={isSent}
-                  className="w-full h-11 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-sm text-zinc-100 font-mono focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                  className="w-full h-11 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-sm text-zinc-100 font-mono focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 disabled:opacity-60"
                 />
               </div>
               <div className="space-y-1.5">
@@ -166,9 +218,9 @@ export function LeadDetailClient({ initialLead }: Props) {
                 <textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  rows={10}
+                  rows={12}
                   disabled={isSent}
-                  className="w-full rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 font-mono resize-none focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                  className="w-full rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2.5 text-sm text-zinc-100 font-mono resize-none focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 disabled:opacity-60"
                 />
               </div>
             </>
@@ -177,12 +229,19 @@ export function LeadDetailClient({ initialLead }: Props) {
       </div>
 
       {/* Floating action bar */}
-      {!isSent && (hasPitch || isNoEmail) && (
+      {showActionBar && (
         <div
           className="fixed left-0 right-0 z-30 bg-zinc-950/95 backdrop-blur-lg border-t border-zinc-800 px-4 py-3 flex gap-2"
           style={{ bottom: 'calc(env(safe-area-inset-bottom) + 4rem)' }}
         >
-          {isNoEmail ? (
+          {isNoEmail && hasPitch ? (
+            <a href={lead.url} target="_blank" rel="noopener noreferrer" className="flex-1">
+              <button className="w-full h-11 inline-flex items-center justify-center gap-2 bg-yellow-600 active:bg-yellow-700 text-white rounded-xl font-medium text-sm">
+                <ExternalLink className="w-4 h-4" />
+                Reply on HN
+              </button>
+            </a>
+          ) : isNoEmail ? (
             <a href={lead.url} target="_blank" rel="noopener noreferrer" className="flex-1">
               <button className="w-full h-11 inline-flex items-center justify-center gap-2 bg-yellow-600 active:bg-yellow-700 text-white rounded-xl font-medium text-sm">
                 <ExternalLink className="w-4 h-4" />
@@ -201,9 +260,10 @@ export function LeadDetailClient({ initialLead }: Props) {
           )}
           <button
             onClick={handleSkip}
-            className="h-11 px-4 rounded-xl text-zinc-400 active:bg-zinc-900 font-medium text-sm"
+            className="h-11 px-4 rounded-xl text-zinc-400 active:bg-zinc-900 font-medium text-sm flex items-center gap-1.5"
           >
             <X className="w-4 h-4" />
+            Skip
           </button>
         </div>
       )}
