@@ -1,7 +1,7 @@
 // Minimal service worker for PWA installability + light caching of static assets.
 // We never cache API responses (auth, leads, pitches) — those must always be fresh.
 
-const CACHE_VERSION = 'leadhawk-v2'
+const CACHE_VERSION = 'leadhawk-v3'
 const STATIC_CACHE = `${CACHE_VERSION}-static`
 
 self.addEventListener('install', (event) => {
@@ -34,18 +34,18 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/auth/')) return
   if (url.pathname.startsWith('/_next/data/')) return
 
-  // Cache-first for hashed Next.js static assets (immutable)
-  if (url.pathname.startsWith('/_next/static/')) {
+  // Network-first for Next.js static chunks. Cache-first would serve stale
+  // Turbopack bundles (stable filenames, changing content) after a dev restart.
+  // In production, content-hashed filenames make network-first safe too.
+  if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/_next/dev/')) {
     event.respondWith(
-      caches.match(req).then(
-        (cached) =>
-          cached ||
-          fetch(req).then((res) => {
-            const clone = res.clone()
-            caches.open(STATIC_CACHE).then((c) => c.put(req, clone))
-            return res
-          })
-      )
+      fetch(req)
+        .then((res) => {
+          const clone = res.clone()
+          caches.open(STATIC_CACHE).then((c) => c.put(req, clone))
+          return res
+        })
+        .catch(() => caches.match(req))
     )
     return
   }

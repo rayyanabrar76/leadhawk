@@ -7,19 +7,41 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Logo } from '@/components/Logo'
-import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import {
-  ArrowRight,
-  ArrowLeft,
-  Check,
   Loader2,
-  Upload,
-  FileText,
+  Check,
   Plus,
-  X,
+  FileText,
+  ChevronRight,
+  Pencil,
   Sparkles,
+  Upload,
+  ArrowLeft,
+  User2,
+  Code2,
+  Building,
+  Briefcase,
+  Link2,
 } from 'lucide-react'
+import type { ExtractedProfile } from '@/lib/ai/extract-profile-from-resume'
+
+interface InitialProfile {
+  bio?: string | null
+  years_experience?: number | null
+  hourly_rate_min?: number | null
+  hourly_rate_max?: number | null
+  preferred_engagement?: string[] | null
+  industries?: string[] | null
+  tech_stack?: string[] | null
+  portfolio_url?: string | null
+  linkedin_url?: string | null
+  github_url?: string | null
+}
+
+interface Props {
+  initialProfile: InitialProfile | null
+}
 
 const TECH_SUGGESTIONS = [
   'React', 'Next.js', 'TypeScript', 'Node.js', 'Python', 'Django', 'Rails',
@@ -32,53 +54,34 @@ const INDUSTRY_SUGGESTIONS = [
 ]
 const ENGAGEMENT_OPTIONS = ['Hourly', 'Project', 'Retainer', 'Full-time']
 
-interface PortfolioItem {
-  title: string
-  url: string
-  description: string
-  tech_used: string[]
-  outcome: string
-}
-
-const EMPTY_ITEM: PortfolioItem = {
-  title: '',
-  url: '',
-  description: '',
-  tech_used: [],
-  outcome: '',
-}
-
-interface FormState {
-  bio: string
-  years_experience: string
-  hourly_rate_min: string
-  hourly_rate_max: string
-  tech_stack: string[]
-  industries: string[]
-  preferred_engagement: string[]
-  portfolio_url: string
-  linkedin_url: string
-  github_url: string
-  resume_filename: string | null
-}
-
-const TOTAL_STEPS = 5
-
-function StepDots({ step }: { step: number }) {
+function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-1.5 justify-center mb-6">
-      {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-        <span
-          key={i}
-          className={`h-1.5 rounded-full transition-all ${
-            i + 1 < step
-              ? 'w-6 bg-violet-500'
-              : i + 1 === step
-              ? 'w-6 bg-violet-400'
-              : 'w-1.5 bg-zinc-700'
-          }`}
-        />
-      ))}
+    <Label className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">
+      {children}
+    </Label>
+  )
+}
+
+function CardHeader({
+  icon: Icon,
+  title,
+  description,
+  iconColor,
+}: {
+  icon: React.ElementType
+  title: string
+  description?: string
+  iconColor?: string
+}) {
+  return (
+    <div className="px-5 py-3.5 border-b border-zinc-800/60 flex items-center gap-2.5">
+      <div className="w-7 h-7 rounded-md bg-zinc-800/80 flex items-center justify-center shrink-0">
+        <Icon className={`w-3.5 h-3.5 ${iconColor ?? 'text-zinc-400'}`} />
+      </div>
+      <div className="min-w-0">
+        <h2 className="text-sm font-semibold text-zinc-100">{title}</h2>
+        {description && <p className="text-xs text-zinc-500 mt-0.5 leading-tight">{description}</p>}
+      </div>
     </div>
   )
 }
@@ -98,13 +101,10 @@ function ChipPicker({
 
   function addCustom() {
     const v = custom.trim()
-    if (v && !selected.includes(v)) {
-      onToggle(v)
-    }
+    if (v && !selected.includes(v)) onToggle(v)
     setCustom('')
   }
 
-  // Show selected items not in options at the top so users see their custom adds
   const customSelected = selected.filter((s) => !options.includes(s))
   const allOptions = [...customSelected, ...options]
 
@@ -137,10 +137,7 @@ function ChipPicker({
             onChange={(e) => setCustom(e.target.value)}
             placeholder="Add your own…"
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                addCustom()
-              }
+              if (e.key === 'Enter') { e.preventDefault(); addCustom() }
             }}
             className="text-sm h-9 flex-1"
           />
@@ -160,31 +157,51 @@ function ChipPicker({
   )
 }
 
-export function ProfileSetup() {
+type Phase = 'choice' | 'extracting' | 'form'
+
+interface FormState {
+  bio: string
+  years_experience: string
+  hourly_rate_min: string
+  hourly_rate_max: string
+  tech_stack: string[]
+  industries: string[]
+  preferred_engagement: string[]
+  portfolio_url: string
+  linkedin_url: string
+  github_url: string
+  resume_filename: string | null
+}
+
+function profileToForm(p: InitialProfile | ExtractedProfile | null): FormState {
+  return {
+    bio: p?.bio ?? '',
+    years_experience: p?.years_experience?.toString() ?? '',
+    hourly_rate_min: p?.hourly_rate_min?.toString() ?? '',
+    hourly_rate_max: p?.hourly_rate_max?.toString() ?? '',
+    tech_stack: p?.tech_stack ?? [],
+    industries: p?.industries ?? [],
+    preferred_engagement: p?.preferred_engagement ?? [],
+    portfolio_url: p?.portfolio_url ?? '',
+    linkedin_url: p?.linkedin_url ?? '',
+    github_url: p?.github_url ?? '',
+    resume_filename: null,
+  }
+}
+
+export function ProfileSetup({ initialProfile }: Props) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [step, setStep] = useState(1)
-  const [form, setForm] = useState<FormState>({
-    bio: '',
-    years_experience: '',
-    hourly_rate_min: '',
-    hourly_rate_max: '',
-    tech_stack: [],
-    industries: [],
-    preferred_engagement: [],
-    portfolio_url: '',
-    linkedin_url: '',
-    github_url: '',
-    resume_filename: null,
-  })
-  const [items, setItems] = useState<PortfolioItem[]>([])
-  const [draftItem, setDraftItem] = useState<PortfolioItem>(EMPTY_ITEM)
-  const [draftTech, setDraftTech] = useState('')
+  const hasExistingData = Boolean(
+    initialProfile?.bio || (initialProfile?.tech_stack && initialProfile.tech_stack.length > 0)
+  )
 
-  const [uploading, setUploading] = useState(false)
+  const [phase, setPhase] = useState<Phase>(hasExistingData ? 'form' : 'choice')
+  const [form, setForm] = useState<FormState>(profileToForm(initialProfile))
+  const [extractError, setExtractError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const [submitError, setSubmitError] = useState('')
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -198,460 +215,324 @@ export function ProfileSetup() {
   }
 
   async function handleResumeUpload(file: File) {
-    setUploading(true)
-    setError('')
+    setPhase('extracting')
+    setExtractError('')
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const res = await fetch('/api/profile/resume', { method: 'POST', body: fd })
+      const res = await fetch('/api/profile/resume?extract=true', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Upload failed')
-      update('resume_filename', file.name)
-      toast.success('Resume parsed and saved')
+      const extracted: ExtractedProfile = data.extracted
+      setForm({ ...profileToForm(extracted), resume_filename: file.name })
+      toast.success('Profile extracted from resume')
+      setPhase('form')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed')
-    }
-    setUploading(false)
-  }
-
-  function addPortfolioItem() {
-    if (!draftItem.title.trim()) return
-    setItems((arr) => [...arr, draftItem])
-    setDraftItem(EMPTY_ITEM)
-    setDraftTech('')
-  }
-
-  function removeItem(idx: number) {
-    setItems((arr) => arr.filter((_, i) => i !== idx))
-  }
-
-  function canAdvance(): boolean {
-    switch (step) {
-      case 1:
-        return form.bio.trim().length >= 10
-      case 2:
-        return form.tech_stack.length > 0
-      default:
-        return true
+      setExtractError(err instanceof Error ? err.message : 'Upload failed')
+      setPhase('choice')
     }
   }
 
-  async function finish() {
+  async function handleSubmit() {
+    if (form.bio.trim().length < 10) {
+      setSubmitError('Please write a short bio (at least 10 characters).')
+      return
+    }
+    if (form.tech_stack.length === 0) {
+      setSubmitError('Please select at least one tech skill.')
+      return
+    }
+
     setSubmitting(true)
-    setError('')
+    setSubmitError('')
     try {
-      // 1. Save the core profile fields. /api/profile triggers Gemini summary.
-      // We also persist `skill` (used by existing refresh + draft-pitch flows
-      // until Phase 2b replaces them) — derive it from tech_stack or bio.
       const skill =
         form.tech_stack[0]
           ? `${form.tech_stack[0]} developer`
           : form.bio.split(/[.\n]/)[0].slice(0, 80)
 
-      const profileBody = {
-        bio: form.bio.trim() || null,
-        years_experience: form.years_experience ? Number(form.years_experience) : null,
-        hourly_rate_min: form.hourly_rate_min ? Number(form.hourly_rate_min) : null,
-        hourly_rate_max: form.hourly_rate_max ? Number(form.hourly_rate_max) : null,
-        tech_stack: form.tech_stack.length ? form.tech_stack : null,
-        industries: form.industries.length ? form.industries : null,
-        preferred_engagement: form.preferred_engagement.length
-          ? form.preferred_engagement
-          : null,
-        portfolio_url: form.portfolio_url.trim() || null,
-        linkedin_url: form.linkedin_url.trim() || null,
-        github_url: form.github_url.trim() || null,
-        skill,
-        // Skip summary until portfolio items are saved — single Gemini call at the end
-        skip_summary: true,
-      }
-
-      const profileRes = await fetch('/api/profile', {
+      const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profileBody),
+        body: JSON.stringify({
+          bio: form.bio.trim() || null,
+          years_experience: form.years_experience ? Number(form.years_experience) : null,
+          hourly_rate_min: form.hourly_rate_min ? Number(form.hourly_rate_min) : null,
+          hourly_rate_max: form.hourly_rate_max ? Number(form.hourly_rate_max) : null,
+          tech_stack: form.tech_stack.length ? form.tech_stack : null,
+          industries: form.industries.length ? form.industries : null,
+          preferred_engagement: form.preferred_engagement.length ? form.preferred_engagement : null,
+          portfolio_url: form.portfolio_url.trim() || null,
+          linkedin_url: form.linkedin_url.trim() || null,
+          github_url: form.github_url.trim() || null,
+          skill,
+        }),
       })
-      if (!profileRes.ok) {
-        const d = await profileRes.json().catch(() => ({}))
+
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
         throw new Error(d.error ?? 'Could not save profile')
       }
-
-      // 2. Save portfolio items (skip_summary on each so we don't fire Gemini per item)
-      for (const it of items) {
-        if (!it.title.trim()) continue
-        await fetch('/api/profile/portfolio', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(it),
-        })
-      }
-
-      // 3. Final summary regen — single Gemini call after everything is saved
-      await fetch('/api/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        // Touch a no-op field to force the summary recompute
-        body: JSON.stringify({ skill }),
-      })
-
       router.push('/dashboard')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Setup failed')
+      setSubmitError(err instanceof Error ? err.message : 'Setup failed')
       setSubmitting(false)
     }
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-10">
-      <Toaster position="top-center" theme="dark" />
-      <div className="w-full max-w-lg">
-        <div className="flex flex-col items-center text-center mb-6">
-          <Logo variant="full" size="md" href={null} />
-          <p className="mt-3 text-sm text-muted-foreground">
-            Set up your profile so we can find leads that actually fit you.
-          </p>
-        </div>
+  // ── Choice screen ──────────────────────────────────────────────
+  if (phase === 'choice' || phase === 'extracting') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4 py-10">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) handleResumeUpload(f)
+          }}
+        />
 
-        <StepDots step={step} />
+        <div className="w-full max-w-md">
+          <div className="flex flex-col items-center text-center mb-10">
+            <Logo variant="full" size="md" href={null} />
+            <h1 className="text-xl font-bold text-zinc-100 mt-5">Set up your profile</h1>
+            <p className="text-sm text-zinc-400 mt-2">How do you want to start?</p>
+          </div>
 
-        <div className="rounded-xl border border-border bg-zinc-900/40 p-6 space-y-5 ring-1 ring-white/5">
-          {step === 1 && (
-            <>
-              <div>
-                <h2 className="text-lg font-semibold mb-1">Tell us about yourself</h2>
-                <p className="text-xs text-muted-foreground">
-                  3-5 sentences on what you do, who you do it for, and what makes you good at it.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Bio</Label>
-                <Textarea
-                  rows={5}
-                  value={form.bio}
-                  onChange={(e) => update('bio', e.target.value)}
-                  placeholder="I build performant Next.js apps for B2B SaaS. Last 3 years I've focused on dashboard UIs and Stripe integrations..."
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Years experience</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="60"
-                    value={form.years_experience}
-                    onChange={(e) => update('years_experience', e.target.value)}
-                    placeholder="5"
-                  />
+          <div className="space-y-3">
+            {/* Upload resume */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={phase === 'extracting'}
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-950 p-5 text-left hover:bg-zinc-900/80 hover:border-violet-500/40 transition-all disabled:opacity-60 group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-violet-500/15 flex items-center justify-center shrink-0">
+                  {phase === 'extracting'
+                    ? <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
+                    : <FileText className="w-5 h-5 text-violet-400" />
+                  }
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Rate min ($/h)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={form.hourly_rate_min}
-                    onChange={(e) => update('hourly_rate_min', e.target.value)}
-                    placeholder="80"
-                  />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-zinc-100">
+                    {phase === 'extracting' ? 'Reading your resume…' : 'Upload your resume'}
+                  </p>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    {phase === 'extracting'
+                      ? 'AI is extracting your skills and experience'
+                      : 'PDF or DOCX · AI fills your profile automatically'
+                    }
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Rate max ($/h)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={form.hourly_rate_max}
-                    onChange={(e) => update('hourly_rate_max', e.target.value)}
-                    placeholder="120"
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
-          {step === 2 && (
-            <>
-              <div>
-                <h2 className="text-lg font-semibold mb-1">Skills &amp; domains</h2>
-                <p className="text-xs text-muted-foreground">
-                  Pick what you actually ship. Add custom tags if we missed something.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Tech stack</Label>
-                <ChipPicker
-                  options={TECH_SUGGESTIONS}
-                  selected={form.tech_stack}
-                  onToggle={(v) => toggleArray('tech_stack', v)}
-                  allowCustom
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Industries</Label>
-                <ChipPicker
-                  options={INDUSTRY_SUGGESTIONS}
-                  selected={form.industries}
-                  onToggle={(v) => toggleArray('industries', v)}
-                  allowCustom
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Preferred engagement</Label>
-                <ChipPicker
-                  options={ENGAGEMENT_OPTIONS}
-                  selected={form.preferred_engagement}
-                  onToggle={(v) => toggleArray('preferred_engagement', v)}
-                />
-              </div>
-            </>
-          )}
-
-          {step === 3 && (
-            <>
-              <div>
-                <h2 className="text-lg font-semibold mb-1">Links</h2>
-                <p className="text-xs text-muted-foreground">All optional but they help the AI write better pitches.</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Portfolio</Label>
-                <Input
-                  type="url"
-                  value={form.portfolio_url}
-                  onChange={(e) => update('portfolio_url', e.target.value)}
-                  placeholder="https://yourname.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>LinkedIn</Label>
-                <Input
-                  type="url"
-                  value={form.linkedin_url}
-                  onChange={(e) => update('linkedin_url', e.target.value)}
-                  placeholder="https://linkedin.com/in/you"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>GitHub</Label>
-                <Input
-                  type="url"
-                  value={form.github_url}
-                  onChange={(e) => update('github_url', e.target.value)}
-                  placeholder="https://github.com/you"
-                />
-              </div>
-            </>
-          )}
-
-          {step === 4 && (
-            <>
-              <div>
-                <h2 className="text-lg font-semibold mb-1">Upload your resume</h2>
-                <p className="text-xs text-muted-foreground">
-                  PDF or DOCX, up to 5MB. We extract text only (no formatting). Heavily recommended — pitches get much better.
-                </p>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0]
-                  if (f) handleResumeUpload(f)
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="w-full flex flex-col items-center justify-center py-10 rounded-lg border-2 border-dashed border-zinc-700 hover:border-violet-500/50 hover:bg-zinc-800/30 transition-colors disabled:opacity-50"
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-7 h-7 text-violet-400 mb-2 animate-spin" />
-                    <p className="text-sm text-zinc-300 font-medium">Parsing resume…</p>
-                  </>
-                ) : form.resume_filename ? (
-                  <>
-                    <Check className="w-7 h-7 text-green-400 mb-2" />
-                    <p className="text-sm text-zinc-100 font-medium">{form.resume_filename}</p>
-                    <p className="text-xs text-violet-400 mt-1">Click to replace</p>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-7 h-7 text-zinc-500 mb-2" />
-                    <p className="text-sm text-zinc-300 font-medium">Drop or click to upload</p>
-                    <p className="text-xs text-zinc-500 mt-1">PDF or DOCX, max 5MB</p>
-                  </>
+                {phase !== 'extracting' && (
+                  <ChevronRight className="w-4 h-4 text-zinc-600 shrink-0" />
                 )}
-              </button>
-            </>
-          )}
-
-          {step === 5 && (
-            <>
-              <div>
-                <h2 className="text-lg font-semibold mb-1">Portfolio items</h2>
-                <p className="text-xs text-muted-foreground">
-                  Add 3-5 of your best projects. Skip if you want — but pitches reference these.
-                </p>
               </div>
+            </button>
 
-              {items.length > 0 && (
-                <ul className="space-y-2">
-                  {items.map((it, idx) => (
-                    <li
-                      key={idx}
-                      className="flex items-start gap-2 rounded-lg border border-zinc-800 bg-zinc-900/40 p-3"
-                    >
-                      <FileText className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-zinc-100 truncate">{it.title}</p>
-                        {it.outcome && (
-                          <p className="text-xs text-zinc-400 truncate">Result: {it.outcome}</p>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(idx)}
-                        className="p-1 text-zinc-500 hover:text-red-400"
-                        aria-label="Remove"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <div className="space-y-2 rounded-lg border border-zinc-800 p-3 bg-zinc-900/30">
-                <Input
-                  value={draftItem.title}
-                  onChange={(e) => setDraftItem((d) => ({ ...d, title: e.target.value }))}
-                  placeholder="Project title (e.g. Stripe checkout for $50M DTC brand)"
-                />
-                <Input
-                  type="url"
-                  value={draftItem.url}
-                  onChange={(e) => setDraftItem((d) => ({ ...d, url: e.target.value }))}
-                  placeholder="https://link-to-project (optional)"
-                />
-                <Textarea
-                  rows={2}
-                  value={draftItem.description}
-                  onChange={(e) => setDraftItem((d) => ({ ...d, description: e.target.value }))}
-                  placeholder="2-3 sentences on what you built and why"
-                />
-                <div className="flex flex-wrap gap-1.5">
-                  {draftItem.tech_used.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() =>
-                        setDraftItem((d) => ({
-                          ...d,
-                          tech_used: d.tech_used.filter((x) => x !== t),
-                        }))
-                      }
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-violet-500/15 text-violet-300 border border-violet-500/30"
-                    >
-                      {t}
-                      <X className="w-3 h-3" />
-                    </button>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    value={draftTech}
-                    onChange={(e) => setDraftTech(e.target.value)}
-                    placeholder="Tech used (press Enter)"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && draftTech.trim()) {
-                        e.preventDefault()
-                        const v = draftTech.trim()
-                        if (!draftItem.tech_used.includes(v)) {
-                          setDraftItem((d) => ({ ...d, tech_used: [...d.tech_used, v] }))
-                        }
-                        setDraftTech('')
-                      }
-                    }}
-                    className="text-sm h-9 flex-1"
-                  />
-                </div>
-                <Input
-                  value={draftItem.outcome}
-                  onChange={(e) => setDraftItem((d) => ({ ...d, outcome: e.target.value }))}
-                  placeholder="Outcome (e.g. cut checkout abandonment 23%)"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={addPortfolioItem}
-                  disabled={!draftItem.title.trim()}
-                  className="w-full h-8"
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1.5" />
-                  Add project
-                </Button>
-              </div>
-            </>
-          )}
-
-          {error && (
-            <div className="rounded-md bg-red-950/50 border border-red-900/50 p-3 text-sm text-red-400">
-              {error}
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-zinc-800" />
+              <span className="text-xs text-zinc-600 font-medium">or</span>
+              <div className="h-px flex-1 bg-zinc-800" />
             </div>
+
+            {/* Fill manually */}
+            <button
+              type="button"
+              onClick={() => setPhase('form')}
+              disabled={phase === 'extracting'}
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-950 p-5 text-left hover:bg-zinc-900/80 hover:border-zinc-700 transition-all disabled:opacity-40"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-zinc-800/80 flex items-center justify-center shrink-0">
+                  <Pencil className="w-5 h-5 text-zinc-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-zinc-100">Fill manually</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">Add your bio, skills, and rates yourself</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-zinc-600 shrink-0" />
+              </div>
+            </button>
+          </div>
+
+          {extractError && (
+            <p className="text-sm text-red-400 text-center mt-4">{extractError}</p>
           )}
         </div>
-
-        <div className="flex items-center justify-between mt-5">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setStep((s) => Math.max(1, s - 1))}
-            disabled={step === 1 || submitting}
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Back
-          </Button>
-
-          {step < TOTAL_STEPS ? (
-            <Button
-              type="button"
-              onClick={() => setStep((s) => s + 1)}
-              disabled={!canAdvance() || uploading}
-              className="bg-violet-600 hover:bg-violet-700"
-            >
-              Next
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              onClick={finish}
-              disabled={submitting}
-              className="bg-violet-600 hover:bg-violet-700"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                  Generating profile…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-1.5" />
-                  Finish &amp; find leads
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-
-        <p className="text-center text-xs text-zinc-500 mt-4">
-          Step {step} of {TOTAL_STEPS}
-          {step >= 4 && ' · You can skip and add later from /profile'}
-        </p>
       </div>
+    )
+  }
+
+  // ── Settings-style form ────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          {hasExistingData ? (
+            <button
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
+          ) : (
+            <button
+              onClick={() => setPhase('choice')}
+              className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
+          )}
+          <Logo variant="full" size="sm" href={null} />
+        </div>
+      </header>
+
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 pb-20 space-y-3">
+        {form.resume_filename && (
+          <div className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-5 py-3.5 flex items-center gap-3">
+            <Check className="w-4 h-4 text-violet-400 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-violet-200 truncate">
+                Resume uploaded: {form.resume_filename}
+              </p>
+              <p className="text-xs text-violet-400/70 mt-0.5">Profile pre-filled — review and adjust below</p>
+            </div>
+          </div>
+        )}
+
+        {/* About you */}
+        <section className="rounded-xl border border-zinc-800 bg-zinc-950">
+          <CardHeader icon={User2} title="About you" description="Required. Used by AI to write better pitches." iconColor="text-violet-400" />
+          <div className="px-5 py-4 space-y-4">
+            <div className="space-y-1.5">
+              <FieldLabel>Bio <span className="text-red-400">*</span></FieldLabel>
+              <Textarea
+                rows={5}
+                value={form.bio}
+                onChange={(e) => update('bio', e.target.value)}
+                placeholder="I build performant Next.js apps for B2B SaaS. Last 3 years I've focused on dashboard UIs and Stripe integrations..."
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <FieldLabel>Years exp.</FieldLabel>
+                <Input
+                  type="number" min="0" max="60"
+                  value={form.years_experience}
+                  onChange={(e) => update('years_experience', e.target.value)}
+                  placeholder="5"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel>Rate min ($/h)</FieldLabel>
+                <Input
+                  type="number" min="0"
+                  value={form.hourly_rate_min}
+                  onChange={(e) => update('hourly_rate_min', e.target.value)}
+                  placeholder="80"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <FieldLabel>Rate max ($/h)</FieldLabel>
+                <Input
+                  type="number" min="0"
+                  value={form.hourly_rate_max}
+                  onChange={(e) => update('hourly_rate_max', e.target.value)}
+                  placeholder="120"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Tech stack */}
+        <section className="rounded-xl border border-zinc-800 bg-zinc-950">
+          <CardHeader icon={Code2} title="Tech stack" description="Required. Pick what you actually ship." iconColor="text-violet-400" />
+          <div className="px-5 py-4">
+            <ChipPicker
+              options={TECH_SUGGESTIONS}
+              selected={form.tech_stack}
+              onToggle={(v) => toggleArray('tech_stack', v)}
+              allowCustom
+            />
+          </div>
+        </section>
+
+        {/* Industries */}
+        <section className="rounded-xl border border-zinc-800 bg-zinc-950">
+          <CardHeader icon={Building} title="Industries" description="Domains you have experience in." />
+          <div className="px-5 py-4">
+            <ChipPicker
+              options={INDUSTRY_SUGGESTIONS}
+              selected={form.industries}
+              onToggle={(v) => toggleArray('industries', v)}
+              allowCustom
+            />
+          </div>
+        </section>
+
+        {/* Engagement */}
+        <section className="rounded-xl border border-zinc-800 bg-zinc-950">
+          <CardHeader icon={Briefcase} title="Preferred engagement" description="What kind of work you're open to." />
+          <div className="px-5 py-4">
+            <ChipPicker
+              options={ENGAGEMENT_OPTIONS}
+              selected={form.preferred_engagement}
+              onToggle={(v) => toggleArray('preferred_engagement', v)}
+            />
+          </div>
+        </section>
+
+        {/* Links */}
+        <section className="rounded-xl border border-zinc-800 bg-zinc-950">
+          <CardHeader icon={Link2} title="Links" description="AI references these in pitches. All optional." />
+          <div className="px-5 py-4 space-y-4">
+            <div className="space-y-1.5">
+              <FieldLabel>Portfolio</FieldLabel>
+              <Input type="url" value={form.portfolio_url} onChange={(e) => update('portfolio_url', e.target.value)} placeholder="https://yourname.com" />
+            </div>
+            <div className="space-y-1.5">
+              <FieldLabel>LinkedIn</FieldLabel>
+              <Input type="url" value={form.linkedin_url} onChange={(e) => update('linkedin_url', e.target.value)} placeholder="https://linkedin.com/in/you" />
+            </div>
+            <div className="space-y-1.5">
+              <FieldLabel>GitHub</FieldLabel>
+              <Input type="url" value={form.github_url} onChange={(e) => update('github_url', e.target.value)} placeholder="https://github.com/you" />
+            </div>
+          </div>
+        </section>
+
+        {submitError && (
+          <div className="rounded-lg bg-red-950/50 border border-red-900/50 p-3 text-sm text-red-400">
+            {submitError}
+          </div>
+        )}
+
+        <Button
+          onClick={handleSubmit}
+          disabled={submitting}
+          className="w-full h-12 bg-violet-600 hover:bg-violet-700 text-base font-semibold"
+        >
+          {submitting ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Generating profile…
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Save &amp; find leads
+            </>
+          )}
+        </Button>
+      </main>
     </div>
   )
 }

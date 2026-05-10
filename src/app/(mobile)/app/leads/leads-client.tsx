@@ -147,7 +147,7 @@ export function MobileLeadsClient({ initialLeads, profileComplete = true }: Prop
         <div className="flex flex-col items-center justify-center text-center px-6 py-20 text-zinc-500">
           <InboxIcon className="w-12 h-12 text-zinc-700 mb-4" />
           <p className="text-sm font-medium text-zinc-300 mb-1">No leads yet</p>
-          <p className="text-xs">Tap the refresh icon to scan Hacker News.</p>
+          <p className="text-xs">Tap the refresh icon to scan for new opportunities.</p>
         </div>
       ) : (
         <ul className="divide-y divide-zinc-800/60">

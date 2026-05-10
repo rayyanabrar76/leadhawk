@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { isAllowedMime, parseResume } from '@/lib/parsers/resume'
 import { refreshProfileSummary } from '@/lib/profile/refresh-summary'
+import { extractProfileFromResume } from '@/lib/ai/extract-profile-from-resume'
 
 const MAX_BYTES = 5 * 1024 * 1024 // 5MB
 
@@ -14,6 +15,9 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const url = new URL(request.url)
+  const shouldExtract = url.searchParams.get('extract') === 'true'
 
   const form = await request.formData().catch(() => null)
   const file = form?.get('file')
@@ -64,6 +68,16 @@ export async function POST(request: Request) {
   if (error) {
     console.error('[resume] save failed:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  if (shouldExtract) {
+    const extracted = await extractProfileFromResume(text)
+    return NextResponse.json({
+      ok: true,
+      filename: file.name,
+      text_length: text.length,
+      extracted,
+    })
   }
 
   await refreshProfileSummary(user.id)

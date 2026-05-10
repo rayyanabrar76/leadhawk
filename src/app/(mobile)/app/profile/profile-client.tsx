@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/client'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import {
-  Briefcase,
   Bell,
   CreditCard,
   Shield,
@@ -30,6 +29,8 @@ import {
   Globe,
   Code2,
   UserX,
+  Link2,
+  Check,
 } from 'lucide-react'
 import { InstallButton } from '@/components/mobile/install-button'
 
@@ -80,45 +81,88 @@ function rateRange(p: ProfileShape | null): string | null {
   return null
 }
 
-function SectionHeading({ title, action }: { title: string; action?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between px-4 pt-4 pb-2">
-      <h3 className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">{title}</h3>
-      {action}
-    </div>
-  )
-}
-
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-zinc-800 text-zinc-200 border border-zinc-700">
+    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs bg-zinc-800/80 text-zinc-200 border border-zinc-700">
       {children}
     </span>
   )
 }
 
-interface SettingsRowProps {
-  icon: React.ComponentType<{ className?: string }>
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 pt-1">
+      <div className="h-px flex-1 bg-zinc-800/60" />
+      <span className="text-[10px] uppercase tracking-widest text-zinc-600 font-semibold">{label}</span>
+      <div className="h-px flex-1 bg-zinc-800/60" />
+    </div>
+  )
+}
+
+function CardHeader({
+  icon: Icon,
+  title,
+  description,
+  action,
+  destructive,
+}: {
+  icon: React.ElementType
+  title: string
+  description?: string
+  action?: React.ReactNode
+  destructive?: boolean
+}) {
+  return (
+    <div className={`px-5 py-3.5 border-b ${destructive ? 'border-red-900/30' : 'border-zinc-800/60'} flex items-center justify-between gap-3`}>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${destructive ? 'bg-red-950/60' : 'bg-zinc-800/80'}`}>
+          <Icon className={`w-3.5 h-3.5 ${destructive ? 'text-red-400' : 'text-zinc-400'}`} />
+        </div>
+        <div className="min-w-0">
+          <h2 className={`text-sm font-semibold ${destructive ? 'text-red-300' : 'text-zinc-100'}`}>{title}</h2>
+          {description && <p className="text-xs text-zinc-500 mt-0.5 leading-tight">{description}</p>}
+        </div>
+      </div>
+      {action}
+    </div>
+  )
+}
+
+function CardRow({
+  icon: Icon,
+  label,
+  href,
+  onClick,
+  trailing,
+  destructive,
+  disabled,
+}: {
+  icon: React.ElementType
   label: string
   href?: string
   onClick?: () => void
   trailing?: React.ReactNode
   destructive?: boolean
-}
-
-function SettingsRow({ icon: Icon, label, href, onClick, trailing, destructive }: SettingsRowProps) {
-  const cls = `flex items-center gap-3 px-4 py-3.5 active:bg-zinc-900/60 transition-colors ${
-    destructive ? 'text-red-400' : 'text-zinc-100'
+  disabled?: boolean
+}) {
+  const cls = `flex items-center gap-3 px-5 py-3.5 transition-colors disabled:opacity-50 ${
+    destructive
+      ? 'text-red-300 hover:bg-red-950/20 active:bg-red-950/30'
+      : 'text-zinc-100 hover:bg-zinc-900/60 active:bg-zinc-900/80'
   }`
   const content = (
     <>
-      <Icon className={`w-5 h-5 ${destructive ? 'text-red-400' : 'text-zinc-400'}`} />
+      <Icon className={`w-4 h-4 shrink-0 ${destructive ? 'text-red-400' : 'text-zinc-400'}`} />
       <span className="flex-1 text-sm font-medium">{label}</span>
       {trailing ?? (!destructive && <ChevronRight className="w-4 h-4 text-zinc-600" />)}
     </>
   )
   if (href) return <Link href={href} className={cls}>{content}</Link>
-  return <button onClick={onClick} className={`w-full text-left ${cls}`}>{content}</button>
+  return (
+    <button onClick={onClick} disabled={disabled} className={`w-full text-left ${cls}`}>
+      {content}
+    </button>
+  )
 }
 
 export function ProfileClient({ email, profile, portfolio: initialPortfolio, gmailConnected }: Props) {
@@ -197,14 +241,17 @@ export function ProfileClient({ email, profile, portfolio: initialPortfolio, gma
   }
 
   async function handleAddItem() {
-    if (!newItem.title.trim()) return
+    if (!newItem.title.trim() && !newItem.url.trim()) {
+      toast.error('Add a title or URL')
+      return
+    }
     setSavingItem(true)
     try {
       const res = await fetch('/api/profile/portfolio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: newItem.title.trim(),
+          title: newItem.title.trim() || newItem.url.trim(),
           url: newItem.url.trim() || null,
           description: newItem.description.trim() || null,
           outcome: newItem.outcome.trim() || null,
@@ -235,10 +282,11 @@ export function ProfileClient({ email, profile, portfolio: initialPortfolio, gma
     }
   }
 
+  const inputCls = 'w-full h-10 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none'
+
   return (
     <>
       <Toaster position="top-center" theme="dark" />
-
       <input
         ref={fileInputRef}
         type="file"
@@ -250,402 +298,404 @@ export function ProfileClient({ email, profile, portfolio: initialPortfolio, gma
         }}
       />
 
-      {/* Profile header */}
-      <div className="flex flex-col items-center text-center px-4 pt-6 pb-6 border-b border-zinc-800">
-        <div className="w-20 h-20 rounded-full bg-violet-600 text-white text-2xl font-bold flex items-center justify-center mb-3">
-          {initialsFromEmail(email)}
+      <div className="px-4 sm:px-6 py-5 pb-28 space-y-3">
+
+        {/* Account header */}
+        <div className="rounded-xl border border-zinc-800 bg-linear-to-br from-zinc-950 to-zinc-900 px-5 py-5">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-14 h-14 rounded-full bg-linear-to-br from-violet-500 to-violet-700 text-white text-lg font-bold flex items-center justify-center shrink-0 shadow-lg shadow-violet-900/30">
+              {initialsFromEmail(email)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-zinc-100 truncate">{email}</p>
+              {profile?.skill && <p className="text-xs text-zinc-500 mt-0.5">{profile.skill}</p>}
+            </div>
+            <Link
+              href="/settings"
+              className="p-2 rounded-lg bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 transition-colors"
+              aria-label="Edit profile"
+            >
+              <Pencil className="w-4 h-4" />
+            </Link>
+          </div>
+          {bio ? (
+            <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3">{bio}</p>
+          ) : (
+            <Link
+              href="/onboarding"
+              className="text-xs text-violet-400 inline-flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3" />
+              Complete your profile
+            </Link>
+          )}
+          {(profile?.years_experience || rate || engagement.length > 0) && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {profile?.years_experience && <Chip>{profile.years_experience}y exp</Chip>}
+              {rate && <Chip>{rate}</Chip>}
+              {engagement.slice(0, 2).map((e) => <Chip key={e}>{e}</Chip>)}
+            </div>
+          )}
         </div>
-        <p className="text-sm font-medium text-zinc-100 mb-0.5">{email}</p>
-        {bio ? (
-          <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed max-w-xs line-clamp-3">{bio}</p>
-        ) : (
-          <Link
-            href="/onboarding"
-            className="text-xs text-violet-400 mt-1.5 inline-flex items-center gap-1"
-          >
-            <Sparkles className="w-3 h-3" />
-            Complete your profile
-          </Link>
-        )}
-        {(profile?.years_experience || rate || engagement.length > 0) && (
-          <div className="flex items-center gap-1.5 flex-wrap justify-center mt-3">
-            {profile?.years_experience && (
-              <Chip>{profile.years_experience}y exp</Chip>
-            )}
-            {rate && <Chip>{rate}</Chip>}
-            {engagement.slice(0, 2).map((e) => (
-              <Chip key={e}>{e}</Chip>
-            ))}
-          </div>
-        )}
-        <Link
-          href="/onboarding"
-          className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-violet-400"
-        >
-          <Pencil className="w-3 h-3" />
-          Edit profile
-        </Link>
-      </div>
 
-      {(stack.length > 0 || industries.length > 0) && (
-        <section>
-          <SectionHeading title="Skills" />
-          <div className="bg-zinc-900/40 px-4 py-3 border-y border-zinc-800/60 space-y-3">
-            {stack.length > 0 && (
-              <div>
-                <p className="text-xs text-zinc-500 mb-1.5">Tech stack</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {stack.map((t) => (
-                    <Chip key={t}>{t}</Chip>
-                  ))}
-                </div>
-              </div>
-            )}
-            {industries.length > 0 && (
-              <div>
-                <p className="text-xs text-zinc-500 mb-1.5">Industries</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {industries.map((i) => (
-                    <Chip key={i}>{i}</Chip>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+        <SectionDivider label="Profile" />
 
-      <section>
-        <SectionHeading title="Resume" />
-        <div className="bg-zinc-900/40 divide-y divide-zinc-800/60 border-y border-zinc-800/60">
+        {/* Skills */}
+        {(stack.length > 0 || industries.length > 0) && (
+          <section className="rounded-xl border border-zinc-800 bg-zinc-950">
+            <CardHeader icon={Code2} title="Skills" />
+            <div className="px-5 py-4 space-y-3">
+              {stack.length > 0 && (
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">Tech stack</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {stack.map((t) => <Chip key={t}>{t}</Chip>)}
+                  </div>
+                </div>
+              )}
+              {industries.length > 0 && (
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">Industries</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {industries.map((i) => <Chip key={i}>{i}</Chip>)}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Resume */}
+        <section className="rounded-xl border border-zinc-800 bg-zinc-950">
+          <CardHeader icon={Upload} title="Resume" description="PDF or DOCX, max 5MB" />
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingResume}
-            className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-zinc-900/60 transition-colors disabled:opacity-50"
+            className="w-full flex items-center gap-3 px-5 py-4 hover:bg-zinc-900/60 active:bg-zinc-900/80 transition-colors disabled:opacity-50"
           >
             {uploadingResume ? (
-              <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
+              <Loader2 className="w-4 h-4 text-violet-400 animate-spin shrink-0" />
             ) : resumeName ? (
-              <FileText className="w-5 h-5 text-violet-400" />
+              <FileText className="w-4 h-4 text-violet-400 shrink-0" />
             ) : (
-              <Upload className="w-5 h-5 text-zinc-400" />
+              <Upload className="w-4 h-4 text-zinc-500 shrink-0" />
             )}
             <div className="flex-1 text-left min-w-0">
               <p className="text-sm font-medium text-zinc-100 truncate">
                 {resumeName ?? 'Upload resume'}
               </p>
               <p className="text-xs text-zinc-500">
-                {uploadingResume
-                  ? 'Parsing…'
-                  : resumeName
-                  ? 'Tap to replace'
-                  : 'PDF or DOCX, max 5MB'}
+                {uploadingResume ? 'Parsing…' : resumeName ? 'Tap to replace' : 'Not uploaded yet'}
               </p>
             </div>
+            <ChevronRight className="w-4 h-4 text-zinc-600 shrink-0" />
           </button>
-        </div>
-      </section>
-
-      <section>
-        <SectionHeading
-          title="Portfolio"
-          action={
-            <button
-              onClick={() => setShowAdd((v) => !v)}
-              className="text-xs font-medium text-violet-400 inline-flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" />
-              {showAdd ? 'Cancel' : 'Add'}
-            </button>
-          }
-        />
-        <div className="bg-zinc-900/40 divide-y divide-zinc-800/60 border-y border-zinc-800/60">
-          {showAdd && (
-            <div className="px-4 py-3 space-y-2 bg-zinc-900/60">
-              <input
-                value={newItem.title}
-                onChange={(e) => setNewItem((n) => ({ ...n, title: e.target.value }))}
-                placeholder="Project title"
-                className="w-full h-10 rounded-lg bg-zinc-950 border border-zinc-800 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none"
-              />
-              <input
-                value={newItem.url}
-                onChange={(e) => setNewItem((n) => ({ ...n, url: e.target.value }))}
-                placeholder="URL (optional)"
-                className="w-full h-10 rounded-lg bg-zinc-950 border border-zinc-800 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none"
-              />
-              <textarea
-                value={newItem.description}
-                onChange={(e) => setNewItem((n) => ({ ...n, description: e.target.value }))}
-                rows={2}
-                placeholder="2-3 sentences on what you built"
-                className="w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none resize-none"
-              />
-              <input
-                value={newItem.outcome}
-                onChange={(e) => setNewItem((n) => ({ ...n, outcome: e.target.value }))}
-                placeholder="Outcome (e.g. cut load time 40%)"
-                className="w-full h-10 rounded-lg bg-zinc-950 border border-zinc-800 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none"
-              />
-              <button
-                onClick={handleAddItem}
-                disabled={!newItem.title.trim() || savingItem}
-                className="w-full h-10 rounded-lg bg-violet-600 active:bg-violet-700 text-white font-medium text-sm disabled:opacity-50 inline-flex items-center justify-center gap-1.5"
-              >
-                {savingItem ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Save project
-              </button>
-            </div>
-          )}
-          {portfolio.length === 0 && !showAdd && (
-            <div className="px-4 py-5 text-center">
-              <p className="text-sm text-zinc-500">No projects yet</p>
-              <p className="text-xs text-zinc-600 mt-1">Add 3-5 of your best work to improve pitches</p>
-            </div>
-          )}
-          {portfolio.map((item) => (
-            <div key={item.id} className="px-4 py-3 flex items-start gap-3">
-              <Code2 className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-zinc-100 truncate flex-1">{item.title}</p>
-                  {item.url && (
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-zinc-500 active:text-violet-400"
-                      aria-label="Open project"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                </div>
-                {item.description && (
-                  <p className="text-xs text-zinc-400 mt-0.5 line-clamp-2">{item.description}</p>
-                )}
-                {item.outcome && (
-                  <p className="text-xs text-violet-300/80 mt-1">→ {item.outcome}</p>
-                )}
-              </div>
-              <button
-                onClick={() => handleDeleteItem(item.id)}
-                className="p-1 text-zinc-500 active:text-red-400"
-                aria-label="Remove"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {(profile?.portfolio_url || profile?.linkedin_url || profile?.github_url) && (
-        <section>
-          <SectionHeading title="Links" />
-          <div className="bg-zinc-900/40 divide-y divide-zinc-800/60 border-y border-zinc-800/60">
-            {profile?.portfolio_url && (
-              <a
-                href={profile.portfolio_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 px-4 py-3.5 active:bg-zinc-900/60"
-              >
-                <Globe className="w-5 h-5 text-zinc-400" />
-                <span className="flex-1 text-sm font-medium text-zinc-100 truncate">Portfolio</span>
-                <ExternalLink className="w-4 h-4 text-zinc-600" />
-              </a>
-            )}
-            {profile?.linkedin_url && (
-              <a
-                href={profile.linkedin_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 px-4 py-3.5 active:bg-zinc-900/60"
-              >
-                <Globe className="w-5 h-5 text-zinc-400" />
-                <span className="flex-1 text-sm font-medium text-zinc-100 truncate">LinkedIn</span>
-                <ExternalLink className="w-4 h-4 text-zinc-600" />
-              </a>
-            )}
-            {profile?.github_url && (
-              <a
-                href={profile.github_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 px-4 py-3.5 active:bg-zinc-900/60"
-              >
-                <Code2 className="w-5 h-5 text-zinc-400" />
-                <span className="flex-1 text-sm font-medium text-zinc-100 truncate">GitHub</span>
-                <ExternalLink className="w-4 h-4 text-zinc-600" />
-              </a>
-            )}
-          </div>
         </section>
-      )}
 
-      {profile?.profile_summary && (
-        <section>
-          <SectionHeading title="What the AI knows about you" />
-          <button
-            onClick={() => setShowSummary((v) => !v)}
-            className="w-full flex items-center gap-3 px-4 py-3.5 bg-zinc-900/40 border-y border-zinc-800/60 active:bg-zinc-900/60"
-          >
-            <Sparkles className="w-5 h-5 text-violet-400" />
-            <span className="flex-1 text-left text-sm font-medium text-zinc-100">
-              {showSummary ? 'Hide AI summary' : 'View AI summary'}
-            </span>
-            <ChevronDown
-              className={`w-4 h-4 text-zinc-500 transition-transform ${showSummary ? 'rotate-180' : ''}`}
-            />
-          </button>
-          {showSummary && (
-            <div className="px-4 py-4 bg-zinc-950 border-b border-zinc-800/60">
-              <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                {profile.profile_summary}
-              </p>
-            </div>
-          )}
-        </section>
-      )}
-
-      <section>
-        <SectionHeading title="Account" />
-        <div className="bg-zinc-900/40 divide-y divide-zinc-800/60 border-y border-zinc-800/60">
-          <SettingsRow
-            icon={gmailConnected ? Wifi : WifiOff}
-            label="Gmail"
-            href={gmailConnected ? undefined : '/api/google/connect'}
-            trailing={
-              <span className={`text-xs ${gmailConnected ? 'text-green-500' : 'text-yellow-400'}`}>
-                {gmailConnected ? 'Connected' : 'Connect'}
-              </span>
+        {/* Portfolio */}
+        <section className="rounded-xl border border-zinc-800 bg-zinc-950">
+          <CardHeader
+            icon={FileText}
+            title="Portfolio"
+            description="Projects improve pitch quality."
+            action={
+              <button
+                onClick={() => setShowAdd((v) => !v)}
+                className="inline-flex items-center gap-1 text-xs font-medium text-violet-400"
+              >
+                {showAdd ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                {showAdd ? 'Cancel' : 'Add'}
+              </button>
             }
           />
-          <SettingsRow
-            icon={Briefcase}
-            label="Skill (legacy)"
-            trailing={<span className="text-xs text-zinc-500 truncate max-w-40">{profile?.skill ?? '—'}</span>}
-          />
-        </div>
-      </section>
-
-      <section>
-        <SectionHeading title="Settings" />
-        <div className="bg-zinc-900/40 divide-y divide-zinc-800/60 border-y border-zinc-800/60">
-          <SettingsRow icon={Bell} label="Notifications" onClick={() => toast('Coming soon')} />
-          <SettingsRow icon={CreditCard} label="Pricing & plan" href="/pricing" />
-          <SettingsRow icon={Shield} label="Privacy policy" href="/privacy" />
-          <SettingsRow icon={FileText} label="Terms" href="/terms" />
-          <SettingsRow icon={HelpCircle} label="Help" onClick={() => toast('Coming soon')} />
-        </div>
-      </section>
-
-      <section>
-        <SectionHeading title="Danger zone" />
-        <div className="bg-zinc-900/40 divide-y divide-zinc-800/60 border-y border-zinc-800/60">
-          {!confirming ? (
-            <SettingsRow
-              icon={Trash2}
-              label="Clear all leads"
-              onClick={() => setConfirming(true)}
-              destructive
-              trailing={<span className="text-xs text-red-400/60">Irreversible</span>}
-            />
-          ) : (
-            <div className="p-4 bg-red-950/20">
-              <div className="flex items-start gap-3 mb-3">
-                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-zinc-100 mb-1">Delete all leads?</p>
-                  <p className="text-xs text-zinc-400">
-                    This permanently deletes every lead and pitch. Cannot be undone.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setConfirming(false)}
-                  disabled={clearing}
-                  className="flex-1 h-10 rounded-lg bg-zinc-800 active:bg-zinc-700 text-zinc-100 font-medium text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleClear}
-                  disabled={clearing}
-                  className="flex-1 h-10 inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-600 active:bg-red-700 text-white font-medium text-sm disabled:opacity-50"
-                >
-                  {clearing && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {clearing ? 'Deleting…' : 'Yes, delete'}
-                </button>
-              </div>
-            </div>
-          )}
-          {!deleteAccountOpen ? (
-            <SettingsRow
-              icon={UserX}
-              label="Delete my account"
-              onClick={() => setDeleteAccountOpen(true)}
-              destructive
-              trailing={<span className="text-xs text-red-400/60">Permanent</span>}
-            />
-          ) : (
-            <div className="p-4 bg-red-950/30">
-              <div className="flex items-start gap-3 mb-3">
-                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-zinc-100 mb-1">Permanently delete account?</p>
-                  <p className="text-xs text-zinc-400">
-                    Removes everything: profile, resume, portfolio, leads, pitches, Gmail
-                    connection. Signing back in starts a brand-new account.
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-1.5 mb-3">
-                <p className="text-xs text-zinc-400">
-                  Type <span className="font-mono font-bold text-red-300">DELETE</span> to confirm
-                </p>
+          <div className="divide-y divide-zinc-800/60">
+            {showAdd && (
+              <div className="px-5 py-4 space-y-2.5">
                 <input
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="DELETE"
-                  disabled={deletingAccount}
-                  className="w-full h-10 rounded-lg bg-zinc-950 border border-zinc-800 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-red-500 focus:outline-none"
+                  value={newItem.title}
+                  onChange={(e) => setNewItem((n) => ({ ...n, title: e.target.value }))}
+                  placeholder="Project title"
+                  className={inputCls}
                 />
-              </div>
-              <div className="flex gap-2">
+                <input
+                  value={newItem.url}
+                  onChange={(e) => setNewItem((n) => ({ ...n, url: e.target.value }))}
+                  placeholder="URL (optional)"
+                  className={inputCls}
+                />
+                <textarea
+                  value={newItem.description}
+                  onChange={(e) => setNewItem((n) => ({ ...n, description: e.target.value }))}
+                  rows={2}
+                  placeholder="2-3 sentences on what you built"
+                  className="w-full rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none resize-none"
+                />
+                <input
+                  value={newItem.outcome}
+                  onChange={(e) => setNewItem((n) => ({ ...n, outcome: e.target.value }))}
+                  placeholder="Outcome (e.g. cut load time 40%)"
+                  className={inputCls}
+                />
                 <button
-                  onClick={() => {
-                    setDeleteAccountOpen(false)
-                    setDeleteConfirmText('')
-                  }}
-                  disabled={deletingAccount}
-                  className="flex-1 h-10 rounded-lg bg-zinc-800 active:bg-zinc-700 text-zinc-100 font-medium text-sm"
+                  onClick={handleAddItem}
+                  disabled={(!newItem.title.trim() && !newItem.url.trim()) || savingItem}
+                  className="w-full h-10 rounded-lg bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-medium text-sm disabled:opacity-50 inline-flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteAccount}
-                  disabled={deletingAccount || deleteConfirmText !== 'DELETE'}
-                  className="flex-1 h-10 inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-600 active:bg-red-700 text-white font-medium text-sm disabled:opacity-50"
-                >
-                  {deletingAccount && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {deletingAccount ? 'Deleting…' : 'Delete forever'}
+                  {savingItem ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Save project
                 </button>
               </div>
+            )}
+            {portfolio.length === 0 && !showAdd && (
+              <div className="px-5 py-6 text-center">
+                <p className="text-sm text-zinc-500">No projects yet</p>
+                <p className="text-xs text-zinc-600 mt-1">Add 3–5 of your best work to improve pitches</p>
+              </div>
+            )}
+            {portfolio.map((item) => (
+              <div key={item.id} className="flex items-start gap-3 px-5 py-3.5">
+                <Code2 className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-zinc-100 truncate flex-1">{item.title}</p>
+                    {item.url && (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-zinc-500 hover:text-violet-400 transition-colors"
+                        aria-label="Open project"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                  {item.description && (
+                    <p className="text-xs text-zinc-400 mt-0.5 line-clamp-2">{item.description}</p>
+                  )}
+                  {item.outcome && (
+                    <p className="text-xs text-violet-300/80 mt-1">→ {item.outcome}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleDeleteItem(item.id)}
+                  className="p-1 text-zinc-600 hover:text-red-400 transition-colors"
+                  aria-label="Remove"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Links */}
+        {(profile?.portfolio_url || profile?.linkedin_url || profile?.github_url) && (
+          <section className="rounded-xl border border-zinc-800 bg-zinc-950">
+            <CardHeader icon={Link2} title="Links" />
+            <div className="divide-y divide-zinc-800/60">
+              {profile?.portfolio_url && (
+                <a
+                  href={profile.portfolio_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-5 py-3.5 hover:bg-zinc-900/60 transition-colors"
+                >
+                  <Globe className="w-4 h-4 text-zinc-400 shrink-0" />
+                  <span className="flex-1 text-sm font-medium text-zinc-100">Portfolio</span>
+                  <ExternalLink className="w-4 h-4 text-zinc-600" />
+                </a>
+              )}
+              {profile?.linkedin_url && (
+                <a
+                  href={profile.linkedin_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-5 py-3.5 hover:bg-zinc-900/60 transition-colors"
+                >
+                  <Globe className="w-4 h-4 text-zinc-400 shrink-0" />
+                  <span className="flex-1 text-sm font-medium text-zinc-100">LinkedIn</span>
+                  <ExternalLink className="w-4 h-4 text-zinc-600" />
+                </a>
+              )}
+              {profile?.github_url && (
+                <a
+                  href={profile.github_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-5 py-3.5 hover:bg-zinc-900/60 transition-colors"
+                >
+                  <Code2 className="w-4 h-4 text-zinc-400 shrink-0" />
+                  <span className="flex-1 text-sm font-medium text-zinc-100">GitHub</span>
+                  <ExternalLink className="w-4 h-4 text-zinc-600" />
+                </a>
+              )}
             </div>
-          )}
-          <SettingsRow icon={LogOut} label="Sign out" onClick={handleSignOut} destructive />
+          </section>
+        )}
+
+        {/* AI summary */}
+        {profile?.profile_summary && (
+          <section className="rounded-xl border border-zinc-800 bg-zinc-950">
+            <button
+              onClick={() => setShowSummary((v) => !v)}
+              className="w-full flex items-center gap-2.5 px-5 py-3.5 hover:bg-zinc-900/60 transition-colors"
+            >
+              <div className="w-7 h-7 rounded-md bg-zinc-800/80 flex items-center justify-center shrink-0">
+                <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+              </div>
+              <span className="flex-1 text-left text-sm font-semibold text-zinc-100">
+                AI profile summary
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 text-zinc-500 transition-transform ${showSummary ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {showSummary && (
+              <div className="px-5 pb-4 border-t border-zinc-800/60">
+                <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap pt-3">
+                  {profile.profile_summary}
+                </p>
+              </div>
+            )}
+          </section>
+        )}
+
+        <SectionDivider label="Account" />
+
+        {/* Account rows */}
+        <section className="rounded-xl border border-zinc-800 bg-zinc-950">
+          <div className="divide-y divide-zinc-800/60">
+            <div className="flex items-center gap-3 px-5 py-3.5">
+              {gmailConnected
+                ? <Wifi className="w-4 h-4 text-zinc-400 shrink-0" />
+                : <WifiOff className="w-4 h-4 text-zinc-400 shrink-0" />
+              }
+              <span className="flex-1 text-sm font-medium text-zinc-100">Gmail</span>
+              {gmailConnected ? (
+                <span className="text-xs font-medium text-green-500">Connected</span>
+              ) : (
+                <a href="/api/google/connect" className="text-xs font-medium text-yellow-400 hover:text-yellow-300">
+                  Connect
+                </a>
+              )}
+            </div>
+            <CardRow icon={Bell} label="Notifications" onClick={() => toast('Coming soon')} />
+            <CardRow icon={CreditCard} label="Pricing &amp; plan" href="/pricing" />
+            <CardRow icon={Shield} label="Privacy policy" href="/privacy" />
+            <CardRow icon={HelpCircle} label="Help" onClick={() => toast('Coming soon')} />
+          </div>
+        </section>
+
+        <SectionDivider label="Danger" />
+
+        {/* Danger zone */}
+        <section className="rounded-xl border border-red-900/40 bg-red-950/10">
+          <CardHeader icon={AlertTriangle} title="Danger zone" description="These actions are permanent." destructive />
+          <div className="divide-y divide-red-900/20">
+            {/* Clear leads */}
+            {!confirming ? (
+              <CardRow
+                icon={Trash2}
+                label="Clear all leads"
+                onClick={() => setConfirming(true)}
+                trailing={<span className="text-xs text-red-400/60 font-medium">Irreversible</span>}
+                destructive
+              />
+            ) : (
+              <div className="px-5 py-4 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-zinc-100">Delete all leads?</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">Cannot be undone. Your profile stays.</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setConfirming(false)}
+                    disabled={clearing}
+                    className="flex-1 h-10 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium text-sm transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleClear}
+                    disabled={clearing}
+                    className="flex-1 h-10 inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-sm disabled:opacity-50 transition-colors"
+                  >
+                    {clearing && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {clearing ? 'Deleting…' : 'Yes, delete'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Delete account */}
+            {!deleteAccountOpen ? (
+              <CardRow
+                icon={UserX}
+                label="Delete my account"
+                onClick={() => setDeleteAccountOpen(true)}
+                trailing={<span className="text-xs text-red-400/60 font-medium">Permanent</span>}
+                destructive
+              />
+            ) : (
+              <div className="px-5 py-4 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-zinc-100">Permanently delete account?</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                      Removes everything: profile, resume, portfolio, leads, pitches, Gmail connection.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">
+                    Type <span className="font-mono font-bold text-red-300 normal-case tracking-normal">DELETE</span> to confirm
+                  </p>
+                  <input
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                    disabled={deletingAccount}
+                    className="w-full h-10 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-red-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setDeleteAccountOpen(false); setDeleteConfirmText('') }}
+                    disabled={deletingAccount}
+                    className="flex-1 h-10 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium text-sm transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deletingAccount || deleteConfirmText !== 'DELETE'}
+                    className="flex-1 h-10 inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-sm disabled:opacity-50 transition-colors"
+                  >
+                    {deletingAccount && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {deletingAccount ? 'Deleting…' : 'Delete forever'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Sign out */}
+            <CardRow icon={LogOut} label="Sign out" onClick={handleSignOut} destructive />
+          </div>
+        </section>
+
+        {/* Install */}
+        <div className="flex justify-center pt-1">
+          <InstallButton variant="subtle" label="Install on this device" className="w-full" />
         </div>
-      </section>
 
-      <div className="flex justify-center mt-6 px-4">
-        <InstallButton variant="subtle" label="Install on this device" className="w-full" />
+        <p className="text-center text-xs text-zinc-700 mt-2">LeadHawk · v1</p>
       </div>
-
-      <p className="text-center text-xs text-zinc-600 mt-8 mb-4">LeadHawk · v1</p>
     </>
   )
 }

@@ -10,13 +10,20 @@ export default async function SettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/?auth=login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select(
-      'email, skill, bio, years_experience, hourly_rate_min, hourly_rate_max, preferred_engagement, industries, tech_stack, portfolio_url, linkedin_url, github_url, resume_filename, resume_uploaded_at, profile_summary, profile_summary_generated_at'
-    )
-    .eq('id', user.id)
-    .single()
+  const [{ data: profile }, { data: portfolio }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select(
+        'email, skill, bio, years_experience, hourly_rate_min, hourly_rate_max, preferred_engagement, industries, tech_stack, portfolio_url, linkedin_url, github_url, resume_filename, resume_uploaded_at, profile_summary, profile_summary_generated_at'
+      )
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('portfolio_items')
+      .select('id, title, url, description, tech_used, outcome, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false }),
+  ])
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,6 +44,7 @@ export default async function SettingsPage() {
         <SettingsClient
           email={profile?.email ?? user.email ?? ''}
           profile={profile ?? null}
+          portfolio={portfolio ?? []}
         />
       </main>
     </div>

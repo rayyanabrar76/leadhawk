@@ -295,7 +295,7 @@ export function DashboardClient({ initialLeads, skill, userEmail, hasGoogleToken
             <p className="text-sm">No leads here yet.</p>
             {filter === 'all' && !highIntentOnly && (
               <p className="text-xs mt-1">
-                Hit <span className="text-violet-400">Refresh leads</span> to scan Hacker News.
+                Hit <span className="text-violet-400">Refresh leads</span> to scan for new opportunities.
               </p>
             )}
             {highIntentOnly && leads.length > 0 && (

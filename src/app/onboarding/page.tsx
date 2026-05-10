@@ -1,33 +1,28 @@
-'use client'
-
-import { useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 import { Toaster } from '@/components/ui/sonner'
-import { toast } from 'sonner'
 import { ProfileSetup } from '@/components/onboarding/profile-setup'
+import { ConfirmedToast } from './confirmed-toast'
 
-function ConfirmedToastEffect() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+export default async function OnboardingPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/?auth=login')
 
-  useEffect(() => {
-    if (searchParams.get('confirmed') === 'true') {
-      toast.success('Email confirmed — Welcome to LeadHawk', { duration: 4000 })
-      router.replace('/onboarding')
-    }
-  }, [searchParams, router])
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('bio, years_experience, hourly_rate_min, hourly_rate_max, preferred_engagement, industries, tech_stack, portfolio_url, linkedin_url, github_url')
+    .eq('id', user.id)
+    .single()
 
-  return null
-}
-
-export default function OnboardingPage() {
   return (
     <>
       <Toaster position="top-center" theme="dark" />
       <Suspense fallback={null}>
-        <ConfirmedToastEffect />
+        <ConfirmedToast />
       </Suspense>
-      <ProfileSetup />
+      <ProfileSetup initialProfile={profile ?? null} />
     </>
   )
 }
