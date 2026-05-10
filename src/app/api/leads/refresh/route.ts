@@ -86,9 +86,17 @@ export async function POST() {
 
   const kept = [...trustedKept, ...classifiedKept]
 
-  // Compute fit_score (keyword overlap, 0-100) for ranking
+  // Fit scoring uses individual tech terms (e.g. "React", "TypeScript") in
+  // addition to compound search phrases. Job descriptions don't say "React developer"
+  // verbatim — they say "React" — so single-token terms are needed for matching.
+  const fitKeywords = Array.from(new Set([
+    ...keywords,
+    ...(profile.tech_stack ?? []).map((t) => t.toLowerCase()),
+    profile.skill.toLowerCase(),
+  ]))
+
   for (const lead of kept) {
-    lead.fit_score = calculateFitScore(keywords, {
+    lead.fit_score = calculateFitScore(fitKeywords, {
       title: lead.title,
       body: lead.body,
       tags: lead.tags ?? null,
