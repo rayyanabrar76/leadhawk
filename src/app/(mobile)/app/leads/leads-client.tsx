@@ -56,9 +56,10 @@ function FreshnessIcon({ score }: { score: number }) {
 
 interface Props {
   initialLeads: Lead[]
+  profileComplete?: boolean
 }
 
-export function MobileLeadsClient({ initialLeads }: Props) {
+export function MobileLeadsClient({ initialLeads, profileComplete = true }: Props) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
   const [refreshing, setRefreshing] = useState(false)
   const [highIntentOnly, setHighIntentOnly] = useState(false)
@@ -105,6 +106,24 @@ export function MobileLeadsClient({ initialLeads }: Props) {
       <MobileHeader onRefresh={handleRefresh} refreshing={refreshing} />
 
       <InstallBanner />
+
+      {!profileComplete && (
+        <Link
+          href="/onboarding"
+          className="mx-4 mt-3 mb-1 rounded-xl bg-violet-500/10 border border-violet-500/30 p-3 flex items-center gap-3 active:bg-violet-500/15"
+        >
+          <div className="w-9 h-9 rounded-lg bg-violet-500/20 flex items-center justify-center shrink-0">
+            <Target className="w-4 h-4 text-violet-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-zinc-100 leading-tight">Complete your profile</p>
+            <p className="text-xs text-zinc-400 mt-0.5 leading-tight">
+              Better profile = better lead matches
+            </p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
+        </Link>
+      )}
 
       {/* High intent toggle row */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">

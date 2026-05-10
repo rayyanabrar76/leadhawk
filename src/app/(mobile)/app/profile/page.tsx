@@ -10,9 +10,17 @@ export default async function MobileProfilePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('skill, email')
+    .select(
+      'email, skill, bio, years_experience, hourly_rate_min, hourly_rate_max, preferred_engagement, industries, tech_stack, portfolio_url, linkedin_url, github_url, resume_filename, resume_uploaded_at, profile_summary, profile_summary_generated_at'
+    )
     .eq('id', user.id)
     .single()
+
+  const { data: portfolio } = await supabase
+    .from('portfolio_items')
+    .select('id, title, url, description, tech_used, outcome, created_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
 
   const { data: googleToken } = await supabase
     .from('google_tokens')
@@ -25,7 +33,8 @@ export default async function MobileProfilePage() {
       <MobileHeader />
       <ProfileClient
         email={profile?.email ?? user.email ?? ''}
-        skill={profile?.skill ?? ''}
+        profile={profile ?? null}
+        portfolio={portfolio ?? []}
         gmailConnected={Boolean(googleToken)}
       />
     </div>

@@ -9,15 +9,16 @@ import { LeadCardSkeleton } from '@/components/lead-card'
 import { LeadDrawer } from '@/components/lead-drawer'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
-import { RefreshCw, Wifi, WifiOff, Settings as SettingsIcon, Target } from 'lucide-react'
+import { RefreshCw, Wifi, WifiOff, Target } from 'lucide-react'
 import { Logo } from '@/components/Logo'
-import { SettingsDialog } from '@/components/settings-dialog'
+import { UserMenu } from '@/components/user-menu'
 
 interface Props {
   initialLeads: Lead[]
   skill: string
   userEmail: string
   hasGoogleToken: boolean
+  profileComplete: boolean
 }
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
@@ -33,14 +34,13 @@ function computeFinalScore(l: Lead): number {
   return (l.freshness_score ?? 0) * 0.4 + (l.intent_priority ?? 0) * 0.6
 }
 
-export function DashboardClient({ initialLeads, skill, hasGoogleToken }: Props) {
+export function DashboardClient({ initialLeads, skill, userEmail, hasGoogleToken, profileComplete }: Props) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
   const [refreshing, setRefreshing] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | 'new' | 'drafted' | 'sent' | 'skipped'>('all')
   const [highIntentOnly, setHighIntentOnly] = useState(true)
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -150,24 +150,6 @@ export function DashboardClient({ initialLeads, skill, hasGoogleToken }: Props) 
     }
   }
 
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
-
-  async function handleClearLeads() {
-    try {
-      const res = await fetch('/api/leads/clear', { method: 'DELETE' })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Clear failed')
-      setLeads([])
-      toast.success(`Cleared ${data.deleted ?? 0} leads`)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Clear failed')
-      throw err
-    }
-  }
-
   const FILTERS = ['all', 'new', 'drafted', 'sent', 'skipped'] as const
 
   return (
@@ -227,16 +209,7 @@ export function DashboardClient({ initialLeads, skill, hasGoogleToken }: Props) 
                 <span className="hidden sm:inline">{refreshing ? 'Scanning…' : 'Refresh leads'}</span>
               </Button>
 
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 w-8 p-0 text-muted-foreground"
-                onClick={() => setSettingsOpen(true)}
-                aria-label="Settings"
-                title="Settings"
-              >
-                <SettingsIcon className="h-3.5 w-3.5" />
-              </Button>
+              <UserMenu email={userEmail} onLeadsCleared={() => setLeads([])} />
             </div>
           </div>
 
@@ -248,6 +221,25 @@ export function DashboardClient({ initialLeads, skill, hasGoogleToken }: Props) 
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        {!profileComplete && (
+          <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 px-4 py-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-violet-500/15 flex items-center justify-center shrink-0">
+              <Target className="w-4 h-4 text-violet-300" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-zinc-100">Complete your profile</p>
+              <p className="text-xs text-muted-foreground">
+                Add a bio + tech stack so leads match what you actually do.
+              </p>
+            </div>
+            <a href="/profile">
+              <Button size="sm" className="h-8 text-xs bg-violet-600 hover:bg-violet-700">
+                Set up
+              </Button>
+            </a>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatCard label="New leads" value={stats.new} color="text-violet-400" />
@@ -334,13 +326,6 @@ export function DashboardClient({ initialLeads, skill, hasGoogleToken }: Props) 
         onDraft={handleDraft}
         onSend={handleSend}
         onSkip={handleSkip}
-      />
-
-      <SettingsDialog
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        onClearLeads={handleClearLeads}
-        onSignOut={handleLogout}
       />
     </div>
   )

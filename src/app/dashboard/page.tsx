@@ -10,11 +10,15 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('skill, email')
+    .select('skill, email, bio, tech_stack')
     .eq('id', user.id)
     .single()
 
   if (!profile?.skill) redirect('/onboarding')
+
+  const profileComplete = Boolean(
+    profile.bio && profile.tech_stack && profile.tech_stack.length > 0
+  )
 
   const { data: googleToken } = await supabase
     .from('google_tokens')
@@ -43,6 +47,7 @@ export default async function DashboardPage() {
       skill={profile.skill}
       userEmail={profile.email ?? user.email ?? ''}
       hasGoogleToken={Boolean(googleToken)}
+      profileComplete={profileComplete}
     />
   )
 }
