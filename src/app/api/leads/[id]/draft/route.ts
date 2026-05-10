@@ -36,12 +36,25 @@ export async function POST(
     return NextResponse.json({ error: 'No skill set' }, { status: 400 })
   }
 
-  const pitch = await draftPitch({
-    title: lead.title,
-    body: lead.body ?? '',
-    userSkill: profile.skill,
-    userEmail: profile.email ?? user.email ?? '',
-  })
+  let pitch
+  try {
+    pitch = await draftPitch({
+      title: lead.title,
+      body: lead.body ?? '',
+      userSkill: profile.skill,
+      userEmail: profile.email ?? user.email ?? '',
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Failed to draft pitch'
+    if (msg.toLowerCase().includes('quota') || msg.includes('429')) {
+      return NextResponse.json(
+        { error: 'AI quota exhausted for today. Try again tomorrow or enable billing on the Gemini project.' },
+        { status: 429 }
+      )
+    }
+    console.error('Draft pitch error:', err)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
 
   const service = createServiceClient()
 

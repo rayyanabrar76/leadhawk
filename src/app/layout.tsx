@@ -7,7 +7,7 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jet
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
-  title: 'LeadHawk — AI Sales Agent for Freelancers',
+  title: 'LeadHawk - AI Sales Agent for Freelancers',
   description:
     'Wake up to booked meetings. LeadHawk monitors Hacker News for people who need your skill right now, drafts personalized pitches, and sends them from your Gmail.',
   icons: {
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     apple: '/logo-icon.png',
   },
   openGraph: {
-    title: 'LeadHawk — AI Sales Agent for Freelancers',
+    title: 'LeadHawk - AI Sales Agent for Freelancers',
     description: 'Wake up to booked meetings.',
     images: ['/logo-full.png'],
     type: 'website',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'LeadHawk — AI Sales Agent for Freelancers',
+    title: 'LeadHawk - AI Sales Agent for Freelancers',
     description: 'Wake up to booked meetings.',
     images: ['/logo-full.png'],
   },

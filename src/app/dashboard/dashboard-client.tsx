@@ -9,8 +9,9 @@ import { LeadCardSkeleton } from '@/components/lead-card'
 import { LeadDrawer } from '@/components/lead-drawer'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
-import { RefreshCw, Wifi, WifiOff, LogOut, Target } from 'lucide-react'
+import { RefreshCw, Wifi, WifiOff, Settings as SettingsIcon, Target } from 'lucide-react'
 import { Logo } from '@/components/Logo'
+import { SettingsDialog } from '@/components/settings-dialog'
 
 interface Props {
   initialLeads: Lead[]
@@ -39,6 +40,7 @@ export function DashboardClient({ initialLeads, skill, hasGoogleToken }: Props) 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | 'new' | 'drafted' | 'sent' | 'skipped'>('all')
   const [highIntentOnly, setHighIntentOnly] = useState(true)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -98,18 +100,25 @@ export function DashboardClient({ initialLeads, skill, hasGoogleToken }: Props) 
   async function handleDraft(leadId: string) {
     try {
       const res = await fetch(`/api/leads/${leadId}/draft`, { method: 'POST' })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Draft failed')
+      const text = await res.text()
+      let data: { error?: string; pitch?: { subject: string; body: string; sent_at: string | null } } = {}
+      try {
+        data = JSON.parse(text)
+      } catch {
+        throw new Error('Server error — check logs')
+      }
+      if (!res.ok || !data.pitch) throw new Error(data.error ?? 'Draft failed')
+      const pitch = data.pitch
 
       updateLeadLocally(leadId, {
         status: 'drafted',
-        pitches: [data.pitch],
+        pitches: [pitch],
       })
       toast.success('Pitch drafted')
 
       const lead = leads.find((l) => l.id === leadId)
       if (lead && !drawerOpen) {
-        setSelectedLead({ ...lead, status: 'drafted', pitches: [data.pitch] })
+        setSelectedLead({ ...lead, status: 'drafted', pitches: [pitch] })
         setDrawerOpen(true)
       }
     } catch (err) {
@@ -144,6 +153,19 @@ export function DashboardClient({ initialLeads, skill, hasGoogleToken }: Props) 
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/')
+  }
+
+  async function handleClearLeads() {
+    try {
+      const res = await fetch('/api/leads/clear', { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Clear failed')
+      setLeads([])
+      toast.success(`Cleared ${data.deleted ?? 0} leads`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Clear failed')
+      throw err
+    }
   }
 
   const FILTERS = ['all', 'new', 'drafted', 'sent', 'skipped'] as const
@@ -209,11 +231,11 @@ export function DashboardClient({ initialLeads, skill, hasGoogleToken }: Props) 
                 size="sm"
                 variant="ghost"
                 className="h-8 w-8 p-0 text-muted-foreground"
-                onClick={handleLogout}
-                aria-label="Sign out"
-                title="Sign out"
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Settings"
+                title="Settings"
               >
-                <LogOut className="h-3.5 w-3.5" />
+                <SettingsIcon className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
@@ -312,6 +334,13 @@ export function DashboardClient({ initialLeads, skill, hasGoogleToken }: Props) 
         onDraft={handleDraft}
         onSend={handleSend}
         onSkip={handleSkip}
+      />
+
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        onClearLeads={handleClearLeads}
+        onSignOut={handleLogout}
       />
     </div>
   )
