@@ -154,53 +154,74 @@ export function DashboardClient({ initialLeads, skill, hasGoogleToken }: Props) 
 
       {/* Top bar */}
       <header className="border-b border-border sticky top-0 bg-background/95 backdrop-blur z-10">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-4">
-          <div className="md:hidden">
-            <Logo variant="icon" size="sm" href="/dashboard" />
-          </div>
-          <div className="hidden md:block">
-            <Logo variant="full" size="sm" href="/dashboard" />
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="sm:hidden">
+              <Logo variant="icon" size="sm" href="/dashboard" />
+            </div>
+            <div className="hidden sm:block shrink-0">
+              <Logo variant="full" size="sm" href="/dashboard" />
+            </div>
+
+            <div className="flex-1 min-w-0 hidden sm:block">
+              <p className="text-xs text-muted-foreground truncate">
+                <span className="text-foreground/70">{skill}</span>
+              </p>
+            </div>
+
+            <div className="flex-1 sm:flex-none" />
+
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {hasGoogleToken ? (
+                <span
+                  className="inline-flex items-center gap-1 text-xs text-green-500"
+                  title="Gmail connected"
+                  aria-label="Gmail connected"
+                >
+                  <Wifi className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Gmail</span>
+                </span>
+              ) : (
+                <a href="/api/google/connect" aria-label="Connect Gmail">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs gap-1 border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10 px-2 sm:px-3"
+                  >
+                    <WifiOff className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Connect Gmail</span>
+                  </Button>
+                </a>
+              )}
+
+              <Button
+                size="sm"
+                className="h-8 text-xs gap-1 bg-violet-600 hover:bg-violet-700 px-2 sm:px-3"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                aria-label="Refresh leads"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{refreshing ? 'Scanning…' : 'Refresh leads'}</span>
+              </Button>
+
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 text-muted-foreground"
+                onClick={handleLogout}
+                aria-label="Sign out"
+                title="Sign out"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
 
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground truncate">
-              <span className="text-foreground/70">{skill}</span>
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {hasGoogleToken ? (
-              <span className="inline-flex items-center gap-1 text-xs text-green-500">
-                <Wifi className="h-3 w-3" /> Gmail
-              </span>
-            ) : (
-              <a href="/api/google/connect">
-                <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10">
-                  <WifiOff className="h-3 w-3" /> Connect Gmail
-                </Button>
-              </a>
-            )}
-
-            <Button
-              size="sm"
-              className="h-7 text-xs gap-1 bg-violet-600 hover:bg-violet-700"
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Scanning…' : 'Refresh leads'}
-            </Button>
-
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 w-7 p-0 text-muted-foreground"
-              onClick={handleLogout}
-              title="Sign out"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+          {/* Skill subtitle on its own row on mobile */}
+          <p className="sm:hidden text-xs text-muted-foreground truncate mt-2 px-1">
+            <span className="text-foreground/70">{skill}</span>
+          </p>
         </div>
       </header>
 
@@ -214,34 +235,37 @@ export function DashboardClient({ initialLeads, skill, hasGoogleToken }: Props) 
         </div>
 
         {/* Filter tabs + High intent toggle */}
-        <div className="flex items-center justify-between border-b border-border">
-          <div className="flex gap-1">
-            {FILTERS.map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-2 text-xs font-medium capitalize transition-colors border-b-2 -mb-px ${
-                  filter === f
-                    ? 'border-violet-500 text-violet-400'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
+        <div className="space-y-2 sm:space-y-0">
+          <div className="flex items-center justify-between gap-2 border-b border-border flex-wrap">
+            <div className="flex gap-1 overflow-x-auto scrollbar-none">
+              {FILTERS.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-2 text-xs font-medium capitalize transition-colors border-b-2 -mb-px whitespace-nowrap ${
+                    filter === f
+                      ? 'border-violet-500 text-violet-400'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
 
-          <button
-            onClick={() => setHighIntentOnly((v) => !v)}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors mb-1 ${
-              highIntentOnly
-                ? 'bg-violet-500/15 border-violet-500/30 text-violet-300'
-                : 'border-border text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Target className="w-3.5 h-3.5" />
-            High intent only
-          </button>
+            <button
+              onClick={() => setHighIntentOnly((v) => !v)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors mb-1 shrink-0 ${
+                highIntentOnly
+                  ? 'bg-violet-500/15 border-violet-500/30 text-violet-300'
+                  : 'border-border text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Target className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">High intent only</span>
+              <span className="sm:hidden">High intent</span>
+            </button>
+          </div>
         </div>
 
         {/* Lead list */}

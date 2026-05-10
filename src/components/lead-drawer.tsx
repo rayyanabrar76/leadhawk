@@ -78,8 +78,8 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto flex flex-col gap-0 p-0">
-        <SheetHeader className="p-6 pb-4">
-          <div className="flex items-center gap-2 mb-1">
+        <SheetHeader className="p-5 sm:p-6 pb-4">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-amber-400">
               <Newspaper className="w-3.5 h-3.5" />
               Hacker News
@@ -103,7 +103,7 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
         <Separator />
 
         {lead.body && (
-          <div className="px-6 py-4">
+          <div className="px-5 sm:px-6 py-4">
             <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-12">
               {lead.body}
             </p>
@@ -174,7 +174,7 @@ export function LeadDrawer({ lead, open, onClose, onDraft, onSend, onSkip }: Lea
         </div>
 
         {!isSent && (hasPitch || isNoEmail) && (
-          <div className="px-6 py-4 border-t border-border flex gap-2">
+          <div className="px-5 sm:px-6 py-4 border-t border-border flex gap-2">
             {isNoEmail ? (
               <a
                 href={lead.url}

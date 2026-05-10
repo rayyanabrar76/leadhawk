@@ -94,7 +94,7 @@ export function LeadCard({ lead, onSelect, onDraft, onSkip }: LeadCardProps) {
 
   return (
     <div
-      className="group border border-border rounded-lg p-4 cursor-pointer hover:border-violet-500/50 hover:bg-muted/30 transition-all"
+      className="group border border-border rounded-lg p-3 sm:p-4 cursor-pointer hover:border-violet-500/50 hover:bg-muted/30 active:bg-muted/40 transition-all"
       onClick={() => onSelect(lead)}
     >
       <div className="flex items-start gap-3">
@@ -130,12 +130,12 @@ export function LeadCard({ lead, onSelect, onDraft, onSkip }: LeadCardProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
+      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50 flex-wrap">
         {lead.status === 'new' && (
           <>
             <Button
               size="sm"
-              className="h-7 text-xs bg-violet-600 hover:bg-violet-700"
+              className="h-8 text-xs bg-violet-600 hover:bg-violet-700"
               onClick={handleDraft}
               disabled={loading !== null}
             >
@@ -145,7 +145,7 @@ export function LeadCard({ lead, onSelect, onDraft, onSkip }: LeadCardProps) {
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 text-xs text-muted-foreground"
+              className="h-8 text-xs text-muted-foreground"
               onClick={handleSkip}
               disabled={loading !== null}
             >
@@ -159,7 +159,7 @@ export function LeadCard({ lead, onSelect, onDraft, onSkip }: LeadCardProps) {
           <>
             <Button
               size="sm"
-              className="h-7 text-xs bg-violet-600 hover:bg-violet-700"
+              className="h-8 text-xs bg-violet-600 hover:bg-violet-700"
               onClick={(e) => { e.stopPropagation(); onSelect(lead) }}
             >
               <Eye className="w-3.5 h-3.5 mr-1.5" />
@@ -168,7 +168,7 @@ export function LeadCard({ lead, onSelect, onDraft, onSkip }: LeadCardProps) {
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 text-xs text-muted-foreground"
+              className="h-8 text-xs text-muted-foreground"
               onClick={handleSkip}
               disabled={loading !== null}
             >

@@ -98,20 +98,20 @@ export default function LandingPage() {
 
       {/* HERO */}
       <section className="relative overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6 pt-10 pb-20 md:pt-14 md:pb-24">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-16 md:pt-14 md:pb-24">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="lh-fade-in">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-300 border border-violet-500/20 mb-6">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-300 border border-violet-500/20 mb-5">
                 <Target className="w-3.5 h-3.5" />
                 AI Sales Agent for Freelancers
               </span>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.05] text-zinc-50 mb-6">
+              <h1 className="text-[2.25rem] leading-[1.05] sm:text-5xl md:text-6xl font-bold tracking-tight text-zinc-50 mb-5">
                 Wake up to <span className="text-violet-400">booked meetings.</span>
               </h1>
-              <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mb-8 leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mb-7 leading-relaxed">
                 LeadHawk monitors Hacker News for people who need your skill right now. AI drafts personalized pitches and sends them from your Gmail. You just show up to the calls.
               </p>
-              <div className="flex flex-wrap items-center gap-3 mb-4">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 mb-4">
                 <Button
                   size="lg"
                   className="bg-violet-600 hover:bg-violet-700 text-white text-base px-6 h-12 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
@@ -123,7 +123,7 @@ export default function LandingPage() {
                   <Button
                     size="lg"
                     variant="ghost"
-                    className="text-zinc-300 hover:text-zinc-50 hover:bg-zinc-900 text-base px-5 h-12"
+                    className="w-full sm:w-auto text-zinc-300 hover:text-zinc-50 hover:bg-zinc-900 text-base px-5 h-12"
                   >
                     See how it works
                     <ArrowDown className="w-4 h-4 ml-2" />
@@ -161,7 +161,7 @@ export default function LandingPage() {
 
       {/* HOW IT WORKS */}
       <section id="how-it-works" className="scroll-mt-20">
-        <div className="max-w-6xl mx-auto px-6 py-24">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-50 mb-4">
               From skill to booked meeting in 4 steps
@@ -193,7 +193,7 @@ export default function LandingPage() {
 
       {/* FEATURES */}
       <section id="features" className="scroll-mt-20 bg-zinc-950">
-        <div className="max-w-6xl mx-auto px-6 py-24">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-50 mb-4">
               Everything you need to land clients on autopilot
@@ -217,7 +217,7 @@ export default function LandingPage() {
 
       {/* PRICING TEASER */}
       <section id="pricing-teaser">
-        <div className="max-w-6xl mx-auto px-6 py-24">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-50 mb-4">
               Simple pricing
@@ -272,7 +272,7 @@ export default function LandingPage() {
 
       {/* FAQ */}
       <section id="faq">
-        <div className="max-w-3xl mx-auto px-6 py-24">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-50 mb-4">
               Frequently asked
@@ -284,7 +284,7 @@ export default function LandingPage() {
 
       {/* FINAL CTA */}
       <section>
-        <div className="max-w-4xl mx-auto px-6 py-24 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-zinc-50 mb-4">
             Stop chasing leads. <span className="text-violet-400">Start meeting them.</span>
           </h2>
