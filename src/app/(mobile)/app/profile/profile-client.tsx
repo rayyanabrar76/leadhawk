@@ -183,6 +183,7 @@ export function ProfileClient({ email, profile, portfolio: initialPortfolio, gma
   const [newItem, setNewItem] = useState({ title: '', url: '', description: '', outcome: '' })
   const [savingItem, setSavingItem] = useState(false)
   const [showSummary, setShowSummary] = useState(false)
+  const [goingToSettings, setGoingToSettings] = useState(false)
 
   const bio = profile?.bio ?? null
   const stack = profile?.tech_stack ?? []
@@ -310,13 +311,15 @@ export function ProfileClient({ email, profile, portfolio: initialPortfolio, gma
               <p className="text-sm font-medium text-zinc-100 truncate">{email}</p>
               {profile?.skill && <p className="text-xs text-zinc-500 mt-0.5">{profile.skill}</p>}
             </div>
-            <Link
-              href="/settings"
+            <button
+              onClick={() => { setGoingToSettings(true); router.push('/settings') }}
               className="p-2 rounded-lg bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 transition-colors"
               aria-label="Edit profile"
             >
-              <Pencil className="w-4 h-4" />
-            </Link>
+              {goingToSettings
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Pencil className="w-4 h-4" />}
+            </button>
           </div>
           {bio ? (
             <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3">{bio}</p>
