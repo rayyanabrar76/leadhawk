@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const MOBILE_UA = /iPhone|iPod|Android.+Mobile|Mobile.+Firefox|Opera Mobi|BlackBerry|webOS/i
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
   const { pathname } = request.nextUrl
@@ -16,6 +18,16 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     url.searchParams.set('auth', 'signup')
+    return NextResponse.redirect(url)
+  }
+
+  const userAgent = request.headers.get('user-agent') ?? ''
+  const isMobileUA = MOBILE_UA.test(userAgent)
+
+  // Mobile users never see the marketing landing — straight to native shell
+  if (isMobileUA && pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/app'
     return NextResponse.redirect(url)
   }
 
@@ -45,7 +57,10 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding')
+  const isProtected =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/onboarding') ||
+    (pathname.startsWith('/app/') && pathname !== '/app')
   const isMarketing =
     pathname === '/' ||
     pathname === '/pricing' ||
@@ -54,16 +69,14 @@ export async function proxy(request: NextRequest) {
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
-    url.searchParams.set('auth', 'signup')
+    url.pathname = isMobileUA ? '/app' : '/'
+    if (!isMobileUA) url.searchParams.set('auth', 'signup')
     return NextResponse.redirect(url)
   }
 
-  // When logged in, bounce away from marketing pages back to the dashboard.
-  // This prevents the mobile back button from leaving the app — pressing back
-  // from /dashboard hits the proxy, sees the user is logged in, and sends them
-  // right back to /dashboard. Only Sign out can leave.
-  if (user && isMarketing) {
+  // Logged-in users: bounce away from desktop marketing back to the dashboard.
+  // Mobile is already handled by the mobile UA redirect above + /app/page.tsx auth check.
+  if (user && isMarketing && pathname === '/' && !isMobileUA) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     url.search = ''

@@ -8,7 +8,7 @@ self.addEventListener('install', (event) => {
   // Pre-cache the home + offline shell so install is non-trivial
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) =>
-      cache.addAll(['/', '/logo-icon.png', '/favicon.ico']).catch(() => {})
+      cache.addAll(['/', '/app', '/logo-icon.png', '/favicon.ico']).catch(() => {})
     )
   )
   self.skipWaiting()

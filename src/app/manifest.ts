@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'LeadHawk',
     description:
       'AI sales agent that finds people on Hacker News who need your skill, drafts personalized pitches, and sends them via your Gmail.',
-    start_url: '/dashboard',
+    start_url: '/app',
     scope: '/',
     display: 'standalone',
     background_color: '#09090b',
