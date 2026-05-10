@@ -145,6 +145,10 @@
   -webkit-touch-callout: none;
   user-select: none;
   touch-action: manipulation;
+  overflow-x: hidden;
+}
+.lh-mobile-app-shell main {
+  overflow-x: hidden;
 }
 .lh-mobile-app-shell input,
 .lh-mobile-app-shell textarea {
